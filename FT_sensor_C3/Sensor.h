@@ -10,45 +10,7 @@
 #define OLED_HBR 3
 
 void onTimer(void *arg);
-void IRAM_ATTR onFalling();
-void IRAM_ATTR onRising();
+void IRAM_ATTR switchWifiMode();
 void gpsTask(void *pvParameters);
 void SensorTask(void *pvParameters);
-
-/*
-//-------------------------------------------------------OLED menu loop
-//-----------------------------Preview
-1.time(satelites Alert) \trip \speed
-2.altitude \latitude \longtitude \satelites \date
-3.total path map ,last relay rcv  time
-4.turn off screen
-//-----------------------------Msg
-1.whisper text
-2.favoriteMeeting text
-3.alert text
-4.SOS Menu
-//-----------------------------Map
-1.latest 10 coordinate path ( per 3 min )
-2.latest 20 coordinate path
-3.total path
-4.favoriteMeeting nearby buddy (5)
-
-//-----------------------------HBR
-1.only HBR
-
  
-//-------------------------------------------------------buttonIR
-
-
-//-----------------------------Preview
-send opus only if  colorLevels < 2  || except off center frequency (433\ 868\ 915)
-
-//-----------------------------Msg
-send opus
-
-//-----------------------------Map
-send opus
-
-//-----------------------------HBR
-HBR test
-*/

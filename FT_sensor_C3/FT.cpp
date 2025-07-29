@@ -280,6 +280,7 @@ void settingToFront() {
   writeJson["PreambleLength"] = FTconfig.PreambleLength;
   writeJson["ForwardGroup"] = FTconfig.ForwardGroup;
   writeJson["ForwardRSSI"] = FTconfig.ForwardRSSI;
+
   writeJson["MAC_0"] = FavoriteMAC[0][0];
   writeJson["MAC_1"] = FavoriteMAC[0][1];
   writeJson["MAC_2"] = FavoriteMAC[0][2];
@@ -547,14 +548,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       case WStype_DISCONNECTED:
         {
           Serial.printf("Client #%u disconnected\n", num);
-          //WifiConnected = false;
-          // vTaskResume(httpdTaskHandle);
         }
 
         break;
       case WStype_CONNECTED:
         {
-          //WifiConnected = true;
           IPAddress ip = webSocket.remoteIP(num);
           Serial.printf("Client #%u connected from %s\n", num, ip.toString().c_str());
           vTaskDelay(pdMS_TO_TICKS(100));
@@ -686,7 +684,8 @@ bool initInfrast() {
 
     } else {
 
-      TurnOnWifi = 0;
+      TurnOnWifi = FTconfig.Mode;
+      PeripheralsMode = FTconfig.Role;
       keyUpdate();
       //Serial.println(" loading SessionList .");
       uint16_t tempWhisperNum = WhisperNum;
@@ -908,9 +907,8 @@ void transformTask(void *pvParameters) {
 
             memcpy(alt_src_mac, &PayloadData[tk_idx][3 + alt_offset], 6);
             //check is my favorite contact
-            Serial.printf("  \n    alt_src_mac \t FavoriteMAC  \n");
-            for (int i = 0; i < 6; i++)
-              Serial.printf("%d:%02X \t  %02X\n", i, alt_src_mac[i], FavoriteMAC[0][i]);
+            // Serial.printf("  \n    alt_src_mac \t FavoriteMAC  \n");
+            // for (int i = 0; i < 6; i++)               Serial.printf("%d:%02X \t  %02X\n", i, alt_src_mac[i], FavoriteMAC[0][i]);
 
             //Serial.printf("  \n   FavoriteMAC:  \n");
 
@@ -930,20 +928,19 @@ void transformTask(void *pvParameters) {
 
             if (PayloadData[tk_idx][1] < 4) {
               sosType = PayloadData[tk_idx][2];
-              Serial.printf("  \n  checkFavList :%d  ", checkFavList);
+              //Serial.printf("  \n  checkFavList :%d  ", checkFavList);
               switch (sosType) {
 
 
-                case 2:
+                case 2:  //report sensor data
                   {
                     // find  rgb beeper
                     if (checkFavList == 0) {
                       //locate flash and beeper ,report ack sensor(GPS\HBR)
 
-                      // EnterSOS = 1;
                       digitalWrite(BEEPER, HIGH);
 
-                      Serial.printf("  search sos : %d\n", PayloadData[tk_idx][2]);
+                      //Serial.printf("  search sos : %d\n", PayloadData[tk_idx][2]);
                       LedRed = PayloadData[tk_idx][10 + alt_offset];
                       LedGreen = PayloadData[tk_idx][11 + alt_offset];
                       LedBlue = PayloadData[tk_idx][12 + alt_offset];
@@ -973,14 +970,9 @@ void transformTask(void *pvParameters) {
                   break;
 
 
-                case 3:
-                  {
-                    //taking HBR
-                    // takingHBR = 1;
-                  }
-                  break;
 
-                case 4:  //ack
+
+                case 4:  //ack sos request
                   {
                     if (checkFavList == 0) {  //get trigger ACK
                       Serial.printf("  ACK sos : %d\n", PayloadData[tk_idx][2]);
@@ -996,49 +988,40 @@ void transformTask(void *pvParameters) {
                   }
                   break;
 
-                default:  //0 or 1
+                case 5:  //execute cmd
                   {
-                    sprintf(jsonStr, "%02X%02X%02X%02X%02X%02X ",
+                    if (checkFavList == 0) {  //
 
-                            PayloadData[tk_idx][3 + alt_offset],
-                            PayloadData[tk_idx][4 + alt_offset],
-                            PayloadData[tk_idx][5 + alt_offset],
-                            PayloadData[tk_idx][6 + alt_offset],
-                            PayloadData[tk_idx][7 + alt_offset],
-                            PayloadData[tk_idx][8 + alt_offset]);
+                      uint8_t cmdSerialNumber = PayloadData[tk_idx][10 + alt_offset];
+                      uint8_t ch01 = PayloadData[tk_idx][11 + alt_offset];
+                      uint8_t ch02 = PayloadData[tk_idx][12 + alt_offset];
+                      uint8_t ch03 = PayloadData[tk_idx][13 + alt_offset];
+                      uint8_t ch04 = PayloadData[tk_idx][14 + alt_offset];
+                      uint8_t ch05 = PayloadData[tk_idx][15 + alt_offset];
+                      Serial.printf("   sos cmd sn: %d\t ch1~5 %d\t %d\t %d\t %d\t %d\t", cmdSerialNumber, ch01, ch02, ch03, ch04, ch05);
 
+                      if (ch05 != PeripheralsMode) {
+                        PeripheralsMode = ch05;
+                        if (ch05 == 0) {
+                          TurnOnWifi = 1;
 
-                    String sosMessage = "";
+                        } else {
+                          TurnOnWifi = 1;
+                        }
+                        FTconfig.Role = PeripheralsMode;
+                        NeedReboot = true;
+                      }
 
-                    if (checkFavList == 9) {
-                      //not my favorite ,beep
-                      sosMessage = " stranger ";
-                    } else {
-                      sosMessage = " favorite:" + checkFavList;
+                      PayloadData[tk_idx][0] = 2;
+                      PayloadData[tk_idx][1] = 0;
+                      PayloadData[tk_idx][2] = 3;
+                      PayloadData[tk_idx][4] = cmdSerialNumber;
+                      while (digitalRead(BusyPin) == HIGH || rfMode == false) {
+                        taskYIELD();
+                        vTaskDelay(pdMS_TO_TICKS(100));
+                      }
+                      TransmitState = radio.startTransmit(PayloadData[tk_idx], 4);
                     }
-
-                    sosMessage = sosMessage + " MAC:" + String(jsonStr);
-                    uint8_t jsonStrtrLen = 0;
-                    if (sosType == 0) {
-                      sosMessage = sosMessage + "phoneSOS"
-                                   + ";type:" + PayloadData[tk_idx][9 + alt_offset] + ";fatal:" + PayloadData[tk_idx][10 + alt_offset]
-                                   + ";Trapped:" + PayloadData[tk_idx][11 + alt_offset] + ";Happened:" + PayloadData[tk_idx][12 + alt_offset];
-                      jsonStrtrLen = PktLen[tk_idx] - 13 - alt_offset;
-                      memcpy(jsonStr, &PayloadData[tk_idx][13 + alt_offset], jsonStrtrLen);
-
-                    } else {
-                      sosMessage = sosMessage + "watchSOS!";
-                      jsonStrtrLen = PktLen[tk_idx] - 10 - alt_offset;
-                      memcpy(jsonStr, &PayloadData[tk_idx][10 + alt_offset], jsonStrtrLen);
-                    }
-                    String gpsDataJson = String((char *)&jsonStr);
-                    sosMessage = sosMessage + " GPS:" + gpsDataJson;
-                    memset(MsgLoop[alertIdx], 0, PKT);
-                    jsonStrtrLen = min((size_t)(sosMessage.length() + 1), (size_t)(PKT - 1));
-                    sosMessage.getBytes((unsigned char *)MsgLoop[alertIdx], sosMessage.length() + 1);
-                    alertIdx = (alertIdx + 1) & 3;
-
-                    //button_SOS
                   }
                   break;
               }
@@ -1218,21 +1201,6 @@ void transformTask(void *pvParameters) {
 
                 webSocket.broadcastBIN(to_web, to_web_len);
               }
-
-              if (oledMsgShow == 1) {  //show in oled
-
-                // Serial.printf("whisper show in oled  to_web[3]. %d \n ", to_web[2]);
-                memset(MsgLoop[wspIdx], 0, PKT);
-                if (to_web[2] == TXT_MSG || to_web[2] == NTF_MSG) {
-                  memcpy(MsgLoop[wspIdx + FOUR], &to_web[2], to_web_len - 2);
-                  jsonStrtrLen = WhisperList[RcvIndex].nameLen;
-                  memcpy(MsgLoop[wspIdx + FOUR], WhisperList[RcvIndex].name, jsonStrtrLen);
-                  MsgLoop[wspIdx + FOUR][jsonStrtrLen] = ':';
-                  memcpy(&MsgLoop[wspIdx + FOUR][jsonStrtrLen + 1], &to_web[2], to_web_len - 2);
-                  wspIdx = (wspIdx + 1) & 3;
-                }
-              }
-              //if (to_web[3] == GPS_MSG){}
             }
           }
           break;
@@ -1283,16 +1251,7 @@ void transformTask(void *pvParameters) {
                   webSocket.broadcastBIN(to_web, to_web_len);
                 }
               }
-              if (oledMsgShow == 1) {  //show in oled
-                if (to_web[2] == TXT_MSG || to_web[2] == NTF_MSG) {
-                  memset(MsgLoop[metIdx + OCT], 0, PKT);
-                  jsonStrtrLen = MeetingList[RcvMeetingIndex].nameLen;
-                  memcpy(MsgLoop[metIdx + OCT], MeetingList[RcvMeetingIndex].name, jsonStrtrLen);
-                  MsgLoop[metIdx + OCT][jsonStrtrLen] = ':';
-                  memcpy(&MsgLoop[metIdx + OCT][jsonStrtrLen + 1], &to_web[2], to_web_len - 2);
-                  metIdx = (metIdx + 1) & 3;
-                }
-              }
+
 
 
               if (ForwardGroup > 0) {
@@ -1311,14 +1270,6 @@ void transformTask(void *pvParameters) {
           {
             if (TurnOnWifi) {
               webSocket.broadcastBIN(PayloadData[tk_idx], PktLen[tk_idx]);
-            }
-            if (oledMsgShow == 1) {
-              if (PayloadData[tk_idx][1] == 0) {
-                //     Serial.printf("speech show in oled  to_web[3]. %d \n ", to_web[3]);
-                memset(MsgLoop[sphIdx + 12], 0, PKT);
-                memcpy(MsgLoop[sphIdx + 12], &PayloadData[tk_idx][2], PktLen[tk_idx] - 1);
-                sphIdx = (sphIdx + 1) & 3;
-              }
             }
           }
 

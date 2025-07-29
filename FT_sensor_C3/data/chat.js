@@ -23,6 +23,7 @@ let lastAlert = "";
 let timeoutId;
 let foundMatch = false;
 let sosSend = false;
+let cmdSerialNumber = 0;
 //const sosArray = new Uint8Array([2, 0, 0, 0, 0, 0, 0, 0, 0]);//SOS header
 
 let CenterFreq = 915;
@@ -1907,10 +1908,24 @@ document.getElementById("pic-btn").addEventListener("click", function () {
     document.getElementById("imageInput").click();
 });
 
+document.getElementById("Search-btn").addEventListener("click", function () {
+    document.getElementById("find-form").style.display = "block";
+    document.querySelector('.sos-input').style.display = 'block';
+    document.querySelector('.IoT-inputs').style.display = 'none';
+    //console.log("open find form");
+});
+
+document.getElementById("IoT-btn").addEventListener("click", function () {
+    document.getElementById("find-form").style.display = "block";
+    document.querySelector('.IoT-inputs').style.display = 'block';
+    document.querySelector('.sos-input').style.display = 'none';
+    //console.log("open find form");
+});
+
+
 document.getElementById("SOS-btn").addEventListener("click", function () {
     document.getElementById("sos-form").style.display = "block";
 });
-
 
 document.getElementById("GPS-btn").addEventListener("click", function () {
 
@@ -2017,6 +2032,8 @@ function Find() {
     const finalPayload = new Uint8Array([...header, ...macBytes]);
 
     ws.send(finalPayload);
+
+    sosSend = true;
     console.log("✅ Payload sent:", finalPayload);
 }
 
@@ -2026,7 +2043,7 @@ function ackSOS() {
     const ids = ['MAC_input1', 'MAC_input2', 'MAC_input3', 'MAC_input4', 'MAC_input5', 'MAC_input6'];
     const macBytes = [];
     let hasError = false;
- const macHexStrings = [];
+    const macHexStrings = [];
     ids.forEach((id, index) => {
         const input = document.getElementById(id);
         const val = input.value.trim();
@@ -2060,9 +2077,66 @@ function ackSOS() {
     const finalPayload = new Uint8Array([...header, ...macBytes]);
 
     ws.send(finalPayload);
+
+    sosSend = true;
     console.log("✅ ackSOS payload sent:", finalPayload);
 }
 
+
+function sendCmd() {
+    const ids = ['MAC_input1', 'MAC_input2', 'MAC_input3', 'MAC_input4', 'MAC_input5', 'MAC_input6'];
+    const macBytes = [];
+    const macHexStrings = [];
+    let hasError = false;
+
+    ids.forEach((id, index) => {
+        const input = document.getElementById(id);
+        const val = input.value.trim();
+
+        // Always treat input as hex
+        const byteVal = parseInt(val, 16);
+
+        if (isNaN(byteVal) || byteVal < 0 || byteVal > 255) {
+            hasError = true;
+            console.log(`❌ Input ${index + 1} invalid or out of range: "${val}"`);
+            input.style.border = '2px solid red';
+        } else {
+            macBytes.push(byteVal);
+            macHexStrings.push(byteVal.toString(16).padStart(2, '0').toUpperCase());
+            input.style.border = '';
+        }
+    });
+
+    if (hasError) {
+        console.log('🚫 MAC data not sent due to input errors.');
+        return;
+    }
+
+    // Debug: show final MAC address in HEX
+    console.log("🔷 MAC Address (Hex):", macHexStrings.join(':'));
+
+    const getColorComponent = (id) => {
+        const val = parseInt(document.getElementById(id).value);
+        return Math.max(0, Math.min(255, isNaN(val) ? 0 : val));
+    };
+    cmdSerialNumber = Math.floor(Math.random() * 256);
+
+    const ch01 = getColorComponent("switch-01");
+    const ch02 = getColorComponent("switch-02");
+    const ch03 = getColorComponent("switch-03");
+    const ch04 = getColorComponent("switch-04");
+    const ch05 = getColorComponent("switch-05");
+
+
+    macBytes.push(cmdSerialNumber, ch01, ch02, ch03, ch04, ch05);
+    const header = [2, 0, 5];
+    const finalPayload = new Uint8Array([...header, ...macBytes]);
+
+    ws.send(finalPayload);
+
+    sosSend = true;
+    console.log("✅ cmd Payload sent:", finalPayload);
+}
 
 
 document.getElementById("del-btn").addEventListener("click", function () {

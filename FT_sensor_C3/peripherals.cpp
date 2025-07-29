@@ -59,13 +59,15 @@ const uint32_t colorLevels[16] = {
 
 void onTimer(void *arg) {
   taskReady = true;  // Set a flag when the timer fires
-
-  // Serial.printf("timer %d\n", millis());
-  //relay broadcast time  ,FT check relay num
 }
 
-
 //-----------------------------button
+
+void IRAM_ATTR switchWifiMode() {
+  TurnOnWifi = !TurnOnWifi;
+  Serial.printf("  reboot to %d ", TurnOnWifi);
+  NeedReboot = true;
+}
 
 
 
@@ -198,18 +200,10 @@ void gpsTask(void *pvParameters) {
       month = gps.date.month();
       year = gps.date.year();
     }
-
-
-
-    if (takingHBR == 1) {
-      vTaskDelay(pdMS_TO_TICKS(15000));
-
-      // Serial.printf(" testing hbr \n");
-    }
-
-
-    vTaskDelay(pdMS_TO_TICKS(200));
   }
+
+
+  vTaskDelay(pdMS_TO_TICKS(200));
 }
 //
 void SensorTask(void *pvParameters) {
@@ -247,11 +241,18 @@ void SensorTask(void *pvParameters) {
     mpu.getEvent(&accel, &gyro, &temp);
 
     // Display sensor data
-    Serial.printf("🌡 Temp: %.2f °C, Altitude: %.2f m\n", temperature, altitude);
-    Serial.printf("📈 Accel X: %.2f Y: %.2f Z: %.2f m/s²\n",
-                  accel.acceleration.x, accel.acceleration.y, accel.acceleration.z);
-    Serial.printf("🌀 Gyro  X: %.2f Y: %.2f Z: %.2f rad/s\n\n",
-                  gyro.gyro.x, gyro.gyro.y, gyro.gyro.z);
+
+    GPSjson["tmp"] = temperature;
+    GPSjson["280alt"] = altitude;
+    GPSjson["aX"] = accel.acceleration.x;
+    GPSjson["aY"] = accel.acceleration.y;
+    GPSjson["aZ"] = accel.acceleration.z;
+    GPSjson["gX"] = gyro.gyro.x;
+    GPSjson["gY"] = gyro.gyro.y;
+    GPSjson["gZ"] = gyro.gyro.z;
+    //Serial.printf("🌡 Temp: %.2f °C, Altitude: %.2f m\n", temperature, altitude);
+    //Serial.printf("📈 Accel X: %.2f Y: %.2f Z: %.2f m/s²\n",                  accel.acceleration.x, accel.acceleration.y, accel.acceleration.z);
+    //Serial.printf("🌀 Gyro  X: %.2f Y: %.2f Z: %.2f rad/s\n\n",                  gyro.gyro.x, gyro.gyro.y, gyro.gyro.z);
 
     vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second
   }

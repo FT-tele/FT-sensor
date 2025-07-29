@@ -5,24 +5,19 @@
 //-------------------------------------------------------hardware
 
 //-----------------------------peripherals
-uint8_t EnableOLED = 1;    // if  peripherals attached
-uint8_t AmplitudeIR = 60;  // if  peripherals attached
-uint8_t LanguageFont = 1;  // if  peripherals attached ,msg langunge
-bool ButtonIR = false;     //speak PTT
-uint8_t EnterSOS = 0;      //waiting for ack
-uint8_t takingHBR = 0;
+uint8_t EnableGPS = 1;        // if  peripherals attached
+uint8_t PeripheralsMode = 1;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3~N others
+bool NeedReboot = false;       // if  peripherals attached
+uint8_t LanguageFont = 1;     // if  peripherals attached ,msg langunge
+uint8_t EnterSOS = 0;         //waiting for ack
 uint8_t LocationSaveFreq = 1;
 uint8_t RelayNum = 0;
-uint8_t oledMsgShow = 1;
 volatile bool TurnOnWifi = 0;  //0 off / 1 on
 uint8_t FavoriteMAC[OCT][6];   //MAC address of AP
 
 uint8_t LedRed = 0;
 uint8_t LedGreen = 0;
 uint8_t LedBlue = 0;
-
-char MsgLoop[HKEY][PKT];
-uint8_t scrollSpeed = 2;
 StaticJsonDocument<200> GPSjson;
 
 int Satellites = 0;
@@ -82,7 +77,7 @@ TaskHandle_t httpdTaskHandle;
 
 TaskHandle_t websocketTaskHandle;
 TaskHandle_t gpsTaskHandle;
-TaskHandle_t oledTaskHandle;
+TaskHandle_t sensorTaskHandle;
 
 
 TaskHandle_t listenTaskHandle;

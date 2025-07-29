@@ -26,10 +26,10 @@
 #define RX_PIN 20
 
 #define MIN_MILL 6000
-//-----------------------------RGB ws2812
-#define LED_PIN 1
-#define BRIGHTNESS 40
-
+//-----------------------------Switch Pin for remote control
+#define BEEPER2 1
+#define SWITCH2 18
+#define SWITCH3 19 
 
 
 #define MENU_BTN 0  //long press SOS 
@@ -154,15 +154,13 @@ MAC_6; string
 //-------------------------------------------------------hardware
 
 //-----------------------------peripherals
-extern uint8_t EnableOLED;    // if  peripherals attached
-extern uint8_t AmplitudeIR;   // if  peripherals attached
-extern uint8_t LanguageFont;  // if  peripherals attached ,msg langunge
-extern bool ButtonIR;         //speak PTT
-extern uint8_t EnterSOS;
-extern uint8_t takingHBR;
+extern uint8_t EnableGPS;    // if  peripherals attached 
+extern uint8_t PeripheralsMode;    // if  peripherals attached 
+extern bool NeedReboot;    // if  peripherals attached 
+extern uint8_t LanguageFont;  // if  peripherals attached ,msg langunge 
+extern uint8_t EnterSOS; 
 extern uint8_t LocationSaveFreq;  //
-
-extern uint8_t oledMsgShow;          //
+          //
 extern uint8_t RelayNum;             //from the last PathGpsList position count , received sensorRelay broadcast
 extern uint8_t FavoriteMAC[OCT][6];  //emergency contact  MAC,first is selfMac
 
@@ -170,10 +168,7 @@ extern volatile bool TurnOnWifi;  //0 off / 1 on
 
 extern uint8_t LedRed;
 extern uint8_t LedGreen;
-extern uint8_t LedBlue;
-
-extern char MsgLoop[HKEY][PKT];
-extern uint8_t scrollSpeed;
+extern uint8_t LedBlue; 
 extern StaticJsonDocument<200> GPSjson;
 
 
@@ -237,7 +232,7 @@ extern TaskHandle_t httpdTaskHandle;
 extern TaskHandle_t websocketTaskHandle;
 
 extern TaskHandle_t gpsTaskHandle;
-extern TaskHandle_t oledTaskHandle; 
+extern TaskHandle_t sensorTaskHandle; 
 
 
 extern TaskHandle_t listenTaskHandle; 
@@ -280,9 +275,7 @@ extern volatile uint8_t LastMeetingB;  // last meeting id for active
 extern uint8_t GreetingCode[OCT];
 extern bool SandboxFlag;
 
-
-
-extern uint8_t FavoriteList[6][OCT];
+ 
 
 //-----------------------------Contact
 
@@ -322,7 +315,8 @@ typedef struct SystemConfig {
   uint8_t PktBits;
   uint8_t MyNameLen;
   uint8_t MyName[KEY];
-  uint8_t Mode;  //FT / Repeater / Sensor / IOT manager /Camera
+  uint8_t Mode;//turnOnWifi
+  uint8_t Role;  //FT / Repeater / Sensor / IOT manager /Camera
   uint8_t ForwardGroup;
 
   //-----------------------------radio setting
