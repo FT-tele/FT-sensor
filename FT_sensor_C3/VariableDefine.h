@@ -27,7 +27,7 @@
 
 #define MIN_MILL 6000
 //-----------------------------Switch Pin for remote control
-#define BEEPER2 1
+#define IN_OR_OUT 1
 #define SWITCH2 18
 #define SWITCH3 19 
 
@@ -156,8 +156,7 @@ MAC_6; string
 //-----------------------------peripherals
 extern uint8_t EnableGPS;    // if  peripherals attached 
 extern uint8_t PeripheralsMode;    // if  peripherals attached 
-extern bool NeedReboot;    // if  peripherals attached 
-extern uint8_t LanguageFont;  // if  peripherals attached ,msg langunge 
+extern bool NeedReboot;    // if  peripherals attached   
 extern uint8_t EnterSOS; 
 extern uint8_t LocationSaveFreq;  //
           //
@@ -319,6 +318,7 @@ typedef struct SystemConfig {
   uint8_t Role;  //FT / Repeater / Sensor / IOT manager /Camera
   uint8_t ForwardGroup;
 
+  uint8_t allowFound;
   //-----------------------------radio setting
   float Frequency;
   float Bandwidth;

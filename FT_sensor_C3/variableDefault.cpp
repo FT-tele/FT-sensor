@@ -7,8 +7,7 @@
 //-----------------------------peripherals
 uint8_t EnableGPS = 1;        // if  peripherals attached
 uint8_t PeripheralsMode = 1;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3~N others
-bool NeedReboot = false;       // if  peripherals attached
-uint8_t LanguageFont = 1;     // if  peripherals attached ,msg langunge
+bool NeedReboot = false;       // if  peripherals attached 
 uint8_t EnterSOS = 0;         //waiting for ack
 uint8_t LocationSaveFreq = 1;
 uint8_t RelayNum = 0;

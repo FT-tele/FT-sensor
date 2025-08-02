@@ -268,6 +268,10 @@ void settingToFront() {
   writeJson["AlertFlag"] = (FTconfig.PktBits & BIT_ALT) ? true : false;
   writeJson["MyName"] = String(reinterpret_cast<char *>(MyName));
   writeJson["SandboxFlag"] = SandboxFlag;
+  writeJson["allowFound"] = FTconfig.allowFound;
+
+
+
   writeJson["SSID"] = SSID;
   writeJson["Password"] = Password;
   writeJson["WifiMode"] = WifiMode;
@@ -342,8 +346,11 @@ void jsonReceived(String jsonStr)  //===================================
         uint8_t cmdType = jsonObj["cmdType"];
         if (cmdType == 1)
           ESP.restart();
-        if (cmdType == 2)
+        if (cmdType == 2) {
+
           resetConfig(1);
+          ESP.restart();
+        }
         // if (cmdType == 3) export configuration and contact;
       }
       break;
@@ -396,6 +403,8 @@ void jsonReceived(String jsonStr)  //===================================
         FTconfig.RadioPower = jsonObj["RadioPower"];
         FTconfig.SyncWord = jsonObj["SyncWord"];
         FTconfig.PreambleLength = jsonObj["PreambleLength"];
+
+        FTconfig.allowFound = jsonObj["allowFound"];
         //FTconfig.SignalInfo = jsonObj["SignalInfo"];
         int ForwardGroupIdx = jsonObj["ForwardGroup"];
         FTconfig.ForwardRSSI = jsonObj["ForwardRSSI"];
@@ -410,13 +419,13 @@ void jsonReceived(String jsonStr)  //===================================
         bool SavingNewContact = jsonObj["SavingNewContact"];
         bool needReboot = jsonObj["needReboot"];
         radioConfigUpdate();
-        //Serial.printf("\n SandboxFlag %d \n", SandboxFlag);
+        Serial.printf("\n save config%d \n", SandboxFlag);
         if (!SandboxFlag) {
-
           FTconfig.MyNameLen = MyNameLen;
           memset(FTconfig.MyName, 0, KEY);
           nameTmp.getBytes(FTconfig.MyName, MyNameLen);
 
+          Serial.println(nameTmp);
           uint8_t PasswordLen = Password.length();
           Password.getBytes(FTconfig.Password, PasswordLen);
 
@@ -478,24 +487,7 @@ void jsonReceived(String jsonStr)  //===================================
         keyUpdate();
       }
       break;
-    case 5:
-      {
-        PhoneCaller = jsonObj["PhoneCaller"];
-        PhoneType = jsonObj["PhoneType"];
-        //phoneInit();
-        if (PhoneTalking == false) {
 
-          //dateIvStr.getBytes(DateIV, OCT);
-          PhoneTalking = true;
-          //Serial.println("phone start  initialization  !");
-
-          //Serial.println("phone finish initialization  !");
-        } else {
-
-          PhoneTalking = false;
-        }
-      }
-      break;
     case 6:
       {
         uint16_t sensorGroupId = jsonObj["sensorGroupId"];
@@ -636,6 +628,8 @@ void handleChatJS(AsyncWebServerRequest *request) {
 //-----------------------------infrasture
 
 bool initInfrast() {
+
+
   bool fsResult = false;
   fsResult = LittleFS.begin();
   if (!fsResult) {
@@ -675,6 +669,9 @@ bool initInfrast() {
       FTconfig.PktBits |= BIT_WSP;
       FTconfig.PktBits |= BIT_MET;
       FTconfig.PktBits |= BIT_SPH;
+
+
+      FTconfig.allowFound = 1;
       memset(FTconfig.MyName, 0, KEY);
       memcpy(FTconfig.MyName, "FT", 2);
       FTconfig.MyNameLen = 3;
@@ -906,11 +903,6 @@ void transformTask(void *pvParameters) {
               alt_offset = 12;
 
             memcpy(alt_src_mac, &PayloadData[tk_idx][3 + alt_offset], 6);
-            //check is my favorite contact
-            // Serial.printf("  \n    alt_src_mac \t FavoriteMAC  \n");
-            // for (int i = 0; i < 6; i++)               Serial.printf("%d:%02X \t  %02X\n", i, alt_src_mac[i], FavoriteMAC[0][i]);
-
-            //Serial.printf("  \n   FavoriteMAC:  \n");
 
 
             for (checkFav = 0; checkFav < OCT; checkFav++) {
@@ -948,23 +940,23 @@ void transformTask(void *pvParameters) {
                       digitalWrite(BEEPER, LOW);
 
                       String sosStr = "";
-                      memset(WsQueue[0].payloadData, 0, PKT);
-                      WsQueue[0].payloadData[0] = 2;
-                      WsQueue[0].payloadData[1] = 0;
-                      WsQueue[0].payloadData[2] = 3;
-                      WsQueue[0].payloadData[10] = '*';
+
+                      PayloadData[tk_idx][0] = 2;
+                      PayloadData[tk_idx][1] = 0;
+                      PayloadData[tk_idx][2] = 3;
+                      PayloadData[tk_idx][10] = '*';
                       GPSjson["W"] = 1;  //sos gps
-                      memcpy(&WsQueue[0].payloadData[3], FavoriteMAC[0], 6);
+                      memcpy(&PayloadData[tk_idx][3], FavoriteMAC[0], 6);
                       serializeJson(GPSjson, sosStr);
-                      WsQueue[0].pktLen = sosStr.length() + 1;
-                      sosStr.getBytes((unsigned char *)&WsQueue[0].payloadData[11], WsQueue[0].pktLen);
-                      WsQueue[0].pktLen = WsQueue[0].pktLen + 11;
+                      PktLen[tk_idx] = sosStr.length() + 1;
+                      sosStr.getBytes((unsigned char *)&PayloadData[tk_idx][11], PktLen[tk_idx]);
+                      PktLen[tk_idx] = PktLen[tk_idx] + 11;
 
                       while (digitalRead(BusyPin) == HIGH || rfMode == false) {
                         taskYIELD();
                         vTaskDelay(pdMS_TO_TICKS(100));
                       }
-                      TransmitState = radio.startTransmit(WsQueue[0].payloadData, WsQueue[0].pktLen);
+                      TransmitState = radio.startTransmit(PayloadData[tk_idx], PktLen[tk_idx]);
                     }
                   }
                   break;
@@ -976,7 +968,9 @@ void transformTask(void *pvParameters) {
                   {
                     if (checkFavList == 0) {  //get trigger ACK
                       Serial.printf("  ACK sos : %d\n", PayloadData[tk_idx][2]);
-                      EnterSOS = 2;
+                      if (FTconfig.allowFound == 1) {
+                        EnterSOS = 2;
+                      }
                       digitalWrite(BEEPER, HIGH);
                       vTaskDelay(pdMS_TO_TICKS(1000));
                       digitalWrite(BEEPER, LOW);
@@ -1022,6 +1016,31 @@ void transformTask(void *pvParameters) {
                       }
                       TransmitState = radio.startTransmit(PayloadData[tk_idx], 4);
                     }
+                  }
+                  break;
+
+                default:  //0 or 1
+                  {
+                    digitalWrite(BEEPER, HIGH);
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    digitalWrite(BEEPER, LOW);
+                    vTaskDelay(pdMS_TO_TICKS(250));
+                    digitalWrite(BEEPER, HIGH);
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    digitalWrite(BEEPER, LOW);
+                    vTaskDelay(pdMS_TO_TICKS(250));
+                    digitalWrite(BEEPER, HIGH);
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    digitalWrite(BEEPER, LOW);
+                    vTaskDelay(pdMS_TO_TICKS(250));
+                    digitalWrite(BEEPER, HIGH);
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    digitalWrite(BEEPER, LOW);
+                    vTaskDelay(pdMS_TO_TICKS(250));
+                    digitalWrite(BEEPER, HIGH);
+                    vTaskDelay(pdMS_TO_TICKS(500));
+                    digitalWrite(BEEPER, LOW);
+                    vTaskDelay(pdMS_TO_TICKS(250));
                   }
                   break;
               }
@@ -1622,5 +1641,14 @@ void websocketTask(void *pvParameters) {
     webSocket.loop();
     vTaskDelay(pdMS_TO_TICKS(10));
     //taskYIELD();
+    if (taskReady) {
+
+      taskReady = false;
+      String gpsJsonStr = "";
+      GPSjson["W"] = 0;
+      GPSjson["T"] = 5;
+      serializeJson(GPSjson, gpsJsonStr);
+      webSocket.broadcastTXT(gpsJsonStr);
+    }
   }
 }

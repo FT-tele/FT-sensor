@@ -119,9 +119,10 @@ void gpsTask(void *pvParameters) {
     }
 
     if (hasLastLocation) {
+
       double segment = TinyGPSPlus::distanceBetween(
-        lastLat, lastLon,
-        Latitude, Longitude);
+
+        Latitude, Longitude, lastLat, lastLon);
 
       if (segment >= 5.0) {
         TotalDistanceMeters += segment;
@@ -250,11 +251,34 @@ void SensorTask(void *pvParameters) {
     GPSjson["gX"] = gyro.gyro.x;
     GPSjson["gY"] = gyro.gyro.y;
     GPSjson["gZ"] = gyro.gyro.z;
-    //Serial.printf("🌡 Temp: %.2f °C, Altitude: %.2f m\n", temperature, altitude);
-    //Serial.printf("📈 Accel X: %.2f Y: %.2f Z: %.2f m/s²\n",                  accel.acceleration.x, accel.acceleration.y, accel.acceleration.z);
-    //Serial.printf("🌀 Gyro  X: %.2f Y: %.2f Z: %.2f rad/s\n\n",                  gyro.gyro.x, gyro.gyro.y, gyro.gyro.z);
 
     vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second
+
+    if (digitalRead(IN_OR_OUT) == HIGH) {
+
+      //takingHBR = 1;
+      ////alert : direction{trigger 0},type{1},srcMac_6,GPSjson
+      String sosStr = "";
+      memset(WsQueue[0].payloadData, 0, PKT);
+      WsQueue[0].payloadData[0] = 2;
+      WsQueue[0].payloadData[1] = 0;
+      WsQueue[0].payloadData[2] = 1;
+      WsQueue[0].payloadData[10] = '*';
+      GPSjson["W"] = 1;  //sos gps
+      GPSjson["ST"] = MyName;
+      //for (int i = 0; i < 6; i++) Serial.printf("%d:%02X ", i, FavoriteMAC[0][i]);
+      memcpy(&WsQueue[0].payloadData[3], FavoriteMAC[0], 6);
+
+      serializeJson(GPSjson, sosStr);
+      WsQueue[0].pktLen = sosStr.length() + 1;
+      sosStr.getBytes((unsigned char *)&WsQueue[0].payloadData[11], WsQueue[0].pktLen);
+      WsQueue[0].pktLen = WsQueue[0].pktLen + 11; 
+      memcpy(SndPkt[0].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
+      SndPkt[0].pktLen = WsQueue[0].pktLen;
+      vTaskDelay(5000 / portTICK_PERIOD_MS);
+      //for (int i = 0; i < SndPkt[takingHBR].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[takingHBR].payloadData[i]);
+      xQueueSend(loraQueue, 0, portMAX_DELAY);
+    }
   }
 }
 //
