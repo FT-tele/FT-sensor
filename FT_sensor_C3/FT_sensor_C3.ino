@@ -2,6 +2,8 @@
 #include <esp_heap_caps.h>
 
 #include "esp_mac.h"
+
+#include <FastLED.h>
 #include "WiFi.h"
 
 #include "AES.h"
@@ -10,9 +12,24 @@
 #include "Sensor.h"
 #include "VariableDefine.h"
 
+//-----------------------------RGB led
 
 
-wifi_mode_t mode;
+const uint32_t colorLevels[16] = {
+  0x000000, 0x00FF00, 0x33FF00, 0x66FF00,
+  0x99FF00, 0xCCFF00, 0xFFFF00, 0xFFCC00,
+  0xFF9900, 0xFF6600, 0xFF3300, 0xFF0000,  // Pure GREEN to Red
+
+  0x0000FF,  // blue
+  0x00FFFF,  // Aqua
+  0xCC00FF,  // purple
+  0xFFFFFF   // Pure White
+};
+
+CRGB leds[1];
+
+
+//wifi_mode_t mode;
 
 
 
@@ -31,7 +48,7 @@ void setup() {
   esp_efuse_mac_get_default(FavoriteMAC[0]);
   esp_read_mac(FavoriteMAC[0], ESP_MAC_WIFI_SOFTAP);
   Serial.println(" FavoriteMAC   .");
-  //for (int i = 0; i < 6; i++) Serial.printf("%d:%02X ", i, FavoriteMAC[0][i]);
+  for (int i = 0; i < 6; i++) Serial.printf("%d:%02X ", i, FavoriteMAC[0][i]);
   //vTaskDelay(pdMS_TO_TICKS(3000));
   listenQueue = xQueueCreate(KEY, sizeof(uint8_t));
   loraQueue = xQueueCreate(KEY, sizeof(uint8_t));
@@ -87,6 +104,18 @@ void setup() {
     .name = "15min_timer"
   };
 
+  if (PeripheralsMode == 2) {
+
+    Serial.println(" ceate SensorTask");
+    Wire.begin(SDA_PIN, SCK_PIN);
+    Wire.setClock(400000);
+
+    xTaskCreatePinnedToCore(SensorTask, "SensorTask", 4096, NULL, 4, &sensorTaskHandle, CORE0);
+    vTaskDelay(6000 / portTICK_PERIOD_MS);
+
+    pinMode(IN_OR_OUT, INPUT_PULLDOWN);
+  }
+
   esp_timer_create(&timer_args, &timer);
   esp_timer_start_periodic(timer, 60000000);
   if (TurnOnWifi == 1) {
@@ -100,31 +129,24 @@ void setup() {
     xTaskCreatePinnedToCore(websocketTask, "websocketTask", 4096, NULL, 7, &websocketTaskHandle, CORE0);
   } else {
 
-    switch (PeripheralsMode) {
-      case 2:  //1 bmp280 & mpu6050
-        {
-
-          Wire.begin(SDA_PIN, SCK_PIN);
-          Wire.setClock(400000);
-
-          xTaskCreatePinnedToCore(SensorTask, "SensorTask", 4096, NULL, 4, &sensorTaskHandle, CORE0);
-          vTaskDelay(6000 / portTICK_PERIOD_MS);
-
-          pinMode(IN_OR_OUT, INPUT_PULLDOWN);
-        }
-        break;
-      case 1:  // 1 speaker;
-        {
-
-          initI2S();
 
 
-          xTaskCreatePinnedToCore(listenTask, "listenTask", 20480, NULL, 10, &listenTaskHandle, CORE1);
-          //vTaskDelay(5000 / portTICK_PERIOD_MS);
 
-          pinMode(IN_OR_OUT, OUTPUT);
-        }
-        break;
+    if (PeripheralsMode == 1)  // 1 speaker;
+    {
+
+      initI2S();
+
+
+      xTaskCreatePinnedToCore(listenTask, "listenTask", 20480, NULL, 10, &listenTaskHandle, CORE1);
+      //vTaskDelay(5000 / portTICK_PERIOD_MS);
+
+      pinMode(IN_OR_OUT, OUTPUT);
+
+      FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, 1);
+      FastLED.setBrightness(BRIGHTNESS);
+
+      Serial.println(" ceate speaker");
     }
   }
 
@@ -142,7 +164,7 @@ void loop() {
 
 
 
-  vTaskDelay(5000 / portTICK_PERIOD_MS);
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   if (taskReady && NeedReboot) {
     if (FTconfig.Mode == !TurnOnWifi) {
@@ -150,5 +172,13 @@ void loop() {
       saveConfig();
     }
     ESP.restart();
+  }
+
+  if (PeripheralsMode == 1) {
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+
+    leds[0] = CRGB(LedRed, LedGreen, LedBlue);  // Set LED color
+    FastLED.show();
   }
 }

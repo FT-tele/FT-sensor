@@ -31,6 +31,10 @@
 #define SWITCH2 18
 #define SWITCH3 19 
 
+//-----------------------------RGB ws2812
+#define LED_PIN 1
+#define BRIGHTNESS 40
+
 
 #define MENU_BTN 0  //long press SOS 
 #define BEEPER 12

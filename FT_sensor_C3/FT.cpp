@@ -340,6 +340,10 @@ void jsonReceived(String jsonStr)  //===================================
   JsonDocument jsonObj;
   deserializeJson(jsonObj, jsonStr);
   uint8_t dataType = jsonObj["T"];
+
+  bool SavingConfig = jsonObj["SavingConfig"];
+  bool SavingNewContact = jsonObj["SavingNewContact"];
+  bool needReboot = jsonObj["needReboot"];
   switch (dataType) {
     case 0:  // system command
       {
@@ -393,6 +397,7 @@ void jsonReceived(String jsonStr)  //===================================
         String nameTmp = jsonObj["MyName"].as<String>();
         MyNameLen = nameTmp.length();
         memset(MyName, 0, KEY);
+        Serial.println(nameTmp);
         nameTmp.getBytes(MyName, MyNameLen);
         SSID = jsonObj["SSID"].as<String>();
         Password = jsonObj["Password"].as<String>();
@@ -415,12 +420,10 @@ void jsonReceived(String jsonStr)  //===================================
           FTconfig.ForwardGroup = ForwardGroup;
         }
 
-        bool SavingConfig = jsonObj["SavingConfig"];
-        bool SavingNewContact = jsonObj["SavingNewContact"];
-        bool needReboot = jsonObj["needReboot"];
         radioConfigUpdate();
-        Serial.printf("\n save config%d \n", SandboxFlag);
         if (!SandboxFlag) {
+
+          Serial.printf("\n save config%d \n", SandboxFlag);
           FTconfig.MyNameLen = MyNameLen;
           memset(FTconfig.MyName, 0, KEY);
           nameTmp.getBytes(FTconfig.MyName, MyNameLen);
@@ -682,7 +685,7 @@ bool initInfrast() {
     } else {
 
       TurnOnWifi = FTconfig.Mode;
-      PeripheralsMode = FTconfig.Role;
+       
       keyUpdate();
       //Serial.println(" loading SessionList .");
       uint16_t tempWhisperNum = WhisperNum;

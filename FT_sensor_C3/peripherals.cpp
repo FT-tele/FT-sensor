@@ -231,6 +231,8 @@ void SensorTask(void *pvParameters) {
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
+  
+  Serial.println(" SensorTask task initialized");
 
   while (1) {
     // BMP280 readings
@@ -252,8 +254,7 @@ void SensorTask(void *pvParameters) {
     GPSjson["gY"] = gyro.gyro.y;
     GPSjson["gZ"] = gyro.gyro.z;
 
-    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second
-
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second 
     if (digitalRead(IN_OR_OUT) == HIGH) {
 
       //takingHBR = 1;
@@ -272,12 +273,14 @@ void SensorTask(void *pvParameters) {
       serializeJson(GPSjson, sosStr);
       WsQueue[0].pktLen = sosStr.length() + 1;
       sosStr.getBytes((unsigned char *)&WsQueue[0].payloadData[11], WsQueue[0].pktLen);
-      WsQueue[0].pktLen = WsQueue[0].pktLen + 11; 
+      WsQueue[0].pktLen = WsQueue[0].pktLen + 11;
       memcpy(SndPkt[0].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
       SndPkt[0].pktLen = WsQueue[0].pktLen;
       vTaskDelay(5000 / portTICK_PERIOD_MS);
       //for (int i = 0; i < SndPkt[takingHBR].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[takingHBR].payloadData[i]);
       xQueueSend(loraQueue, 0, portMAX_DELAY);
+    }else{
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
   }
 }
