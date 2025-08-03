@@ -335,26 +335,19 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
   return true;
 }
 
-void jsonReceived(String jsonStr)  //===================================
+ void jsonReceived(String jsonStr)  //===================================
 {
   JsonDocument jsonObj;
   deserializeJson(jsonObj, jsonStr);
   uint8_t dataType = jsonObj["T"];
-
-  bool SavingConfig = jsonObj["SavingConfig"];
-  bool SavingNewContact = jsonObj["SavingNewContact"];
-  bool needReboot = jsonObj["needReboot"];
   switch (dataType) {
     case 0:  // system command
       {
         uint8_t cmdType = jsonObj["cmdType"];
         if (cmdType == 1)
           ESP.restart();
-        if (cmdType == 2) {
-
+        if (cmdType == 2)
           resetConfig(1);
-          ESP.restart();
-        }
         // if (cmdType == 3) export configuration and contact;
       }
       break;
@@ -397,10 +390,23 @@ void jsonReceived(String jsonStr)  //===================================
         String nameTmp = jsonObj["MyName"].as<String>();
         MyNameLen = nameTmp.length();
         memset(MyName, 0, KEY);
-        //Serial.println(nameTmp);
         nameTmp.getBytes(MyName, MyNameLen);
-        SSID = jsonObj["SSID"].as<String>();
-        Password = jsonObj["Password"].as<String>();
+
+
+
+        memset(FTconfig.SSID, 0, KEY);
+        memset(FTconfig.Password, 0, KEY);
+
+        String SSID = jsonObj["SSID"].as<String>();
+        String Password = jsonObj["Password"].as<String>();
+
+        uint8_t PasswordLen = Password.length();
+        Password.getBytes(FTconfig.Password, PasswordLen);
+
+        uint8_t ssidLen = SSID.length();
+        SSID.getBytes(FTconfig.SSID, ssidLen);
+
+
         FTconfig.Frequency = jsonObj["Frequency"];
         FTconfig.Bandwidth = jsonObj["Bandwidth"];
         FTconfig.SpreadFactor = jsonObj["SpreadFactor"];
@@ -408,9 +414,16 @@ void jsonReceived(String jsonStr)  //===================================
         FTconfig.RadioPower = jsonObj["RadioPower"];
         FTconfig.SyncWord = jsonObj["SyncWord"];
         FTconfig.PreambleLength = jsonObj["PreambleLength"];
-
         FTconfig.allowFound = jsonObj["allowFound"];
-        //FTconfig.SignalInfo = jsonObj["SignalInfo"];
+        FTconfig.oledLanguage = jsonObj["oledLanguage"];
+        /* temp mac only for experiment
+        FavoriteMAC[0][0] = jsonObj["MAC_0"];
+        FavoriteMAC[0][1] = jsonObj["MAC_1"];
+        FavoriteMAC[0][2] = jsonObj["MAC_2"];
+        FavoriteMAC[0][3] = jsonObj["MAC_3"];
+        FavoriteMAC[0][FOUR] = jsonObj["MAC_4"];
+        FavoriteMAC[0][5] jsonObj["MAC_5"];
+        */
         int ForwardGroupIdx = jsonObj["ForwardGroup"];
         FTconfig.ForwardRSSI = jsonObj["ForwardRSSI"];
         PKT_BITS = FTconfig.PktBits;
@@ -420,23 +433,33 @@ void jsonReceived(String jsonStr)  //===================================
           FTconfig.ForwardGroup = ForwardGroup;
         }
 
+        bool SavingConfig = jsonObj["SavingConfig"];
+        bool SavingNewContact = jsonObj["SavingNewContact"];
+        bool needReboot = jsonObj["needReboot"];
         radioConfigUpdate();
+        //Serial.printf("\n MyNameLen %d \n", MyNameLen);
+        Serial.println(nameTmp);
+
         if (!SandboxFlag) {
 
-          //Serial.printf("\n save config%d \n", SandboxFlag);
           FTconfig.MyNameLen = MyNameLen;
           memset(FTconfig.MyName, 0, KEY);
           nameTmp.getBytes(FTconfig.MyName, MyNameLen);
 
-          //Serial.println(nameTmp);
-          uint8_t PasswordLen = Password.length();
-          Password.getBytes(FTconfig.Password, PasswordLen);
-
-          uint8_t ssidLen = SSID.length();
-          SSID.getBytes(FTconfig.SSID, ssidLen);
 
           saveConfig();
+          /*
+          File file = LittleFS.open("/SystemConfig.bin", "w");
+          if (!file) {
+            Serial.println("Failed to save SystemConfig file    ");
+          }
+
+          file.write((byte *)&FTconfig, sizeof(SystemConfig));
+          file.close();
+          vTaskDelay(200 / portTICK_PERIOD_MS);
+          Serial.println("  SystemConfig file  saved successful  ");
           writeSessionList(WhisperList, WhisperNum, MeetingList, MeetingNum);
+          */
         }
       }
       break;
@@ -490,7 +513,6 @@ void jsonReceived(String jsonStr)  //===================================
         keyUpdate();
       }
       break;
-
     case 6:
       {
         uint16_t sensorGroupId = jsonObj["sensorGroupId"];
@@ -502,15 +524,33 @@ void jsonReceived(String jsonStr)  //===================================
           memcpy(&beforeRsa[OCT], MeetingList[sensorGroupId].sharedKey, 32);
           uint8_t afterRsa[256];
           //Serial.printf("\n beforeRsa  %d  sensorMsgId is %d\n", sensorGroupId, sensorMsgId);
-          //for (int i = 0; i < 40; i++)  //Serial.printf("%d:%02X ", i, beforeRsa[i]);
-          //encryptRSA(beforeRsa, afterRsa, keyData);
-          //Serial.printf("\n afterRsa \n");
-          //for (int i = 0; i < 256; i++)  //Serial.printf("%d:%02X ", i, afterRsa[i]);
-          keyData = "";
+          for (int i = 0; i < 40; i++)  //Serial.printf("%d:%02X ", i, beforeRsa[i]);
+            //encryptRSA(beforeRsa, afterRsa, keyData);
+            //Serial.printf("\n afterRsa \n");
+            for (int i = 0; i < 256; i++)  //Serial.printf("%d:%02X ", i, afterRsa[i]);
+              keyData = "";
           keyData = String((char *)afterRsa, 256);
 
 
           //httpServer.on("/download", HTTP_GET, handleKeyDownload);
+        }
+      }
+      break;
+    case 7:
+      {
+        PhoneCaller = jsonObj["PhoneCaller"];
+        PhoneType = jsonObj["PhoneType"];
+        //phoneInit();
+        if (PhoneTalking == false) {
+
+          //dateIvStr.getBytes(DateIV, OCT);
+          PhoneTalking = true;
+          //Serial.println("phone start  initialization  !");
+
+          //Serial.println("phone finish initialization  !");
+        } else {
+
+          PhoneTalking = false;
         }
       }
       break;
