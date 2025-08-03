@@ -43,7 +43,7 @@ void setup() {
   initInfrast();
 
 
-  Serial.print("\n   setup   boot \n");
+  //Serial.print("\n   setup   boot \n");
 
   esp_efuse_mac_get_default(FavoriteMAC[0]);
   esp_read_mac(FavoriteMAC[0], ESP_MAC_WIFI_SOFTAP);
@@ -69,8 +69,8 @@ void setup() {
 
 
 
-  Serial.printf("  \n    Free heap: %d\n", esp_get_free_heap_size());
-  Serial.printf("\n Minimum WiFi.mode  free heap: %d\n", esp_get_minimum_free_heap_size());
+  //Serial.printf("  \n    Free heap: %d\n", esp_get_free_heap_size());
+  //Serial.printf("\n Minimum WiFi.mode  free heap: %d\n", esp_get_minimum_free_heap_size());
 
 
 
@@ -95,7 +95,7 @@ void setup() {
   loraInit();
 
   GenerateKeyPairs(myPrivate, myPublic);
-  Serial.println("GenerateKeyPairs  successfully.");
+  //Serial.println("GenerateKeyPairs  successfully.");
 
   esp_timer_create_args_t timer_args = {
     .callback = &onTimer,
@@ -106,7 +106,7 @@ void setup() {
 
   if (PeripheralsMode == 2) {
 
-    Serial.println(" ceate SensorTask");
+    //Serial.println(" ceate SensorTask");
     Wire.begin(SDA_PIN, SCK_PIN);
     Wire.setClock(400000);
 
@@ -146,7 +146,7 @@ void setup() {
       FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, 1);
       FastLED.setBrightness(BRIGHTNESS);
 
-      Serial.println(" ceate speaker");
+      //Serial.println(" ceate speaker");
     }
   }
 
@@ -154,8 +154,8 @@ void setup() {
 
 
 
-  Serial.printf("  heap: %d\n", esp_get_free_heap_size());
-  Serial.printf("Minimum: %d\n", esp_get_minimum_free_heap_size());
+  //Serial.printf("  heap: %d\n", esp_get_free_heap_size());
+  //Serial.printf("Minimum: %d\n", esp_get_minimum_free_heap_size());
 }
 
 void loop() {

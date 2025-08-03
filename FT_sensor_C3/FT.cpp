@@ -397,7 +397,7 @@ void jsonReceived(String jsonStr)  //===================================
         String nameTmp = jsonObj["MyName"].as<String>();
         MyNameLen = nameTmp.length();
         memset(MyName, 0, KEY);
-        Serial.println(nameTmp);
+        //Serial.println(nameTmp);
         nameTmp.getBytes(MyName, MyNameLen);
         SSID = jsonObj["SSID"].as<String>();
         Password = jsonObj["Password"].as<String>();
@@ -423,12 +423,12 @@ void jsonReceived(String jsonStr)  //===================================
         radioConfigUpdate();
         if (!SandboxFlag) {
 
-          Serial.printf("\n save config%d \n", SandboxFlag);
+          //Serial.printf("\n save config%d \n", SandboxFlag);
           FTconfig.MyNameLen = MyNameLen;
           memset(FTconfig.MyName, 0, KEY);
           nameTmp.getBytes(FTconfig.MyName, MyNameLen);
 
-          Serial.println(nameTmp);
+          //Serial.println(nameTmp);
           uint8_t PasswordLen = Password.length();
           Password.getBytes(FTconfig.Password, PasswordLen);
 
@@ -502,11 +502,11 @@ void jsonReceived(String jsonStr)  //===================================
           memcpy(&beforeRsa[OCT], MeetingList[sensorGroupId].sharedKey, 32);
           uint8_t afterRsa[256];
           //Serial.printf("\n beforeRsa  %d  sensorMsgId is %d\n", sensorGroupId, sensorMsgId);
-          for (int i = 0; i < 40; i++)  //Serial.printf("%d:%02X ", i, beforeRsa[i]);
-            //encryptRSA(beforeRsa, afterRsa, keyData);
-            //Serial.printf("\n afterRsa \n");
-            for (int i = 0; i < 256; i++)  //Serial.printf("%d:%02X ", i, afterRsa[i]);
-              keyData = "";
+          //for (int i = 0; i < 40; i++)  //Serial.printf("%d:%02X ", i, beforeRsa[i]);
+          //encryptRSA(beforeRsa, afterRsa, keyData);
+          //Serial.printf("\n afterRsa \n");
+          //for (int i = 0; i < 256; i++)  //Serial.printf("%d:%02X ", i, afterRsa[i]);
+          keyData = "";
           keyData = String((char *)afterRsa, 256);
 
 
@@ -542,14 +542,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     switch (type) {
       case WStype_DISCONNECTED:
         {
-          Serial.printf("Client #%u disconnected\n", num);
+          //Serial.printf("Client #%u disconnected\n", num);
         }
 
         break;
       case WStype_CONNECTED:
         {
           IPAddress ip = webSocket.remoteIP(num);
-          Serial.printf("Client #%u connected from %s\n", num, ip.toString().c_str());
+          //Serial.printf("Client #%u connected from %s\n", num, ip.toString().c_str());
           vTaskDelay(pdMS_TO_TICKS(100));
           settingToFront();
           vTaskDelay(pdMS_TO_TICKS(500));
@@ -560,7 +560,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
           String speechListJson;
           File file = LittleFS.open("/speechList.json", "r");
           if (!file) {
-            Serial.println("Failed to open file");
+            //Serial.println("Failed to open file");
             return;
           }
           while (file.available()) {
@@ -576,7 +576,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         break;
       case WStype_TEXT:
         {
-          // Serial.printf("WStype_TEXT from browser #%u: %s\n", length, payload);
+          // //Serial.printf("WStype_TEXT from browser #%u: %s\n", length, payload);
           memset(&WsText, 0, length);
           memcpy(&WsText, payload, length);
           WsTextLen = 1;
@@ -600,7 +600,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
             xQueueSend(wsEventQueue, &enque_idx, portMAX_DELAY);
             enque_idx = (enque_idx + 1) & 31;
-            Serial.printf("\nWStype_BIN   . %d\n", enque_idx);
+            //Serial.printf("\nWStype_BIN   . %d\n", enque_idx);
           }
         }
 
@@ -612,7 +612,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 //-----------------------------http
 void handleRoot(AsyncWebServerRequest *request) {
   request->send(LittleFS, "/index.html", "text/html");
-  Serial.println("httpdTask handleRoot.");
+  //Serial.println("httpdTask handleRoot.");
 }
 
 void handleCSS(AsyncWebServerRequest *request) {
@@ -679,13 +679,13 @@ bool initInfrast() {
       memcpy(FTconfig.MyName, "FT", 2);
       FTconfig.MyNameLen = 3;
       saveConfig();
-      Serial.print("\n first save config \n");
+      //Serial.print("\n first save config \n");
       ESP.restart();
 
     } else {
 
       TurnOnWifi = FTconfig.Mode;
-       
+
       keyUpdate();
       //Serial.println(" loading SessionList .");
       uint16_t tempWhisperNum = WhisperNum;
@@ -742,7 +742,7 @@ bool testWifi(void) {
 
 bool compareID(byte *array1, byte *array2, uint8_t cmpLength) {
   for (uint8_t i = 0; i < cmpLength; i++) {
-    // Serial.printf("%d:%02X \t  %02X\n", i, array1[i], array2[i]);
+    // //Serial.printf("%d:%02X \t  %02X\n", i, array1[i], array2[i]);
     if (array1[i] ^ array2[i]) {  // XOR checks if any bit is different
       return false;               // Return false immediately if there is a mismatch
     }
@@ -753,7 +753,7 @@ bool compareID(byte *array1, byte *array2, uint8_t cmpLength) {
 
 
 void loraInit() {
-  Serial.print(F("llcc68 Initializing ... "));
+  //Serial.print(F("llcc68 Initializing ... "));
   int ResetInitState = 0;  // = radio.reset();
   vTaskDelay(pdMS_TO_TICKS(2000));
   if (ResetInitState == RADIOLIB_ERR_NONE) {
@@ -775,7 +775,7 @@ void loraInit() {
   if (loraInitState == RADIOLIB_ERR_NONE) {
     //Serial.println(F("loraInit  success!"));
   } else {
-    Serial.print(F("failed, code "));
+    //Serial.print(F("failed, code "));
     //Serial.println(loraInitState);
     while (true) {
       vTaskDelay(pdMS_TO_TICKS(10));
@@ -797,7 +797,7 @@ void loraInit() {
   pinMode(DIO2Pin, INPUT);
   attachInterrupt(digitalPinToInterrupt(DIO2Pin), clearLoraFlagBit, RISING);  // Trigger on falling edge
   radio.startReceive();
-  Serial.print(F("radio Task inited "));
+  //Serial.print(F("radio Task inited "));
 }
 
 bool idMatch(uint32_t highPart1, uint32_t lowPart1, uint32_t highPart2, uint32_t lowPart2) {
@@ -854,7 +854,7 @@ void transformTask(void *pvParameters) {
 
 
   //phoneEnable = EnableOLED;
-  Serial.println("transformTask.");
+  //Serial.println("transformTask.");
 
 
   while (1) {
@@ -865,7 +865,7 @@ void transformTask(void *pvParameters) {
       //Serial.printf("  rcv  . PktLen    %d \n.", PktLen[tk_idx]);
 
 
-      Serial.printf("  \n.");
+      //Serial.printf("  \n.");
       switch (PayloadData[tk_idx][0] & PKT_BITS) {  //       wsSendBin(to_web, to_web_len);
 
         case BIT_PHO:  // PayloadData:code,frameLen1,frameLen2,frame1_v,frame2_v
@@ -873,7 +873,7 @@ void transformTask(void *pvParameters) {
             if (TurnOnWifi) {
               webSocket.broadcastBIN(PayloadData[tk_idx], PktLen[tk_idx]);
             } else {
-              Serial.printf(" listening    %d \n.", PktLen[tk_idx]);
+              //Serial.printf(" listening    %d \n.", PktLen[tk_idx]);
               firstOpus = PayloadData[tk_idx][1];
               memcpy(frame_buffer[frameIdx], &PayloadData[tk_idx][3], firstOpus);
               frame_len[frameIdx] = firstOpus;
@@ -896,10 +896,10 @@ void transformTask(void *pvParameters) {
             }
             //show in oled
 
-            Serial.printf("  \n    rcv alert length: %d\n", PktLen[tk_idx]);
-            for (int i = 0; i < PktLen[tk_idx]; i++) Serial.printf("%d:%02X ", i, PayloadData[tk_idx][i]);
+            //Serial.printf("  \n    rcv alert length: %d\n", PktLen[tk_idx]);
+            // for (int i = 0; i < PktLen[tk_idx]; i++) //Serial.printf("%d:%02X ", i, PayloadData[tk_idx][i]);
 
-            Serial.printf("  \n    rcv alert end:  \n");
+            //Serial.printf("  \n    rcv alert end:  \n");
             if (PayloadData[tk_idx][1] == 0)
               alt_offset = 0;
             else
@@ -970,7 +970,7 @@ void transformTask(void *pvParameters) {
                 case 4:  //ack sos request
                   {
                     if (checkFavList == 0) {  //get trigger ACK
-                      Serial.printf("  ACK sos : %d\n", PayloadData[tk_idx][2]);
+                      //Serial.printf("  ACK sos : %d\n", PayloadData[tk_idx][2]);
                       if (FTconfig.allowFound == 1) {
                         EnterSOS = 2;
                       }
@@ -995,7 +995,7 @@ void transformTask(void *pvParameters) {
                       uint8_t ch03 = PayloadData[tk_idx][13 + alt_offset];
                       uint8_t ch04 = PayloadData[tk_idx][14 + alt_offset];
                       uint8_t ch05 = PayloadData[tk_idx][15 + alt_offset];
-                      Serial.printf("   sos cmd sn: %d\t ch1~5 %d\t %d\t %d\t %d\t %d\t", cmdSerialNumber, ch01, ch02, ch03, ch04, ch05);
+                      //Serial.printf("   sos cmd sn: %d\t ch1~5 %d\t %d\t %d\t %d\t %d\t", cmdSerialNumber, ch01, ch02, ch03, ch04, ch05);
 
                       if (ch05 != PeripheralsMode) {
                         PeripheralsMode = ch05;
@@ -1062,7 +1062,7 @@ void transformTask(void *pvParameters) {
                   {
 
                     uint8_t grtLen = PayloadData[tk_idx][42];
-                    Serial.printf("rcvGreeting %d  FT.PayloadData:%s  ", grtLen, PayloadData[tk_idx]);
+                    //Serial.printf("rcvGreeting %d  FT.PayloadData:%s  ", grtLen, PayloadData[tk_idx]);
                     if (grtLen == PktLen[tk_idx] - 43) {
                       to_web[0] = SSN;
                       to_web[1] = GRT;  // older version front  is 41
@@ -1101,7 +1101,7 @@ void transformTask(void *pvParameters) {
                       vTaskDelay(50 / portTICK_PERIOD_MS);
                       memcpy(ConfirmList[ConfirmIndex].sharedKey, cfmSharedKey, KEY);
                       aes_decipher(rcv_ciphered, cipher_len, rcv_decipher, cfmSharedKey, rcv_IV, &decipher_len);
-                      Serial.printf(" after aes_decipher %d \n.", decipher_len);
+                      //Serial.printf(" after aes_decipher %d \n.", decipher_len);
                       memcpy(ConfirmList[ConfirmIndex].idIndex, rcv_decipher, 2);
                       memcpy(ConfirmList[ConfirmIndex].sessionId, &rcv_decipher[2], OCT);
                       memcpy(&to_web[3], &rcv_decipher[10], decipher_len - 10);
@@ -1115,7 +1115,7 @@ void transformTask(void *pvParameters) {
                   break;
                 case TNL:
                   {
-                    Serial.println("rcvTunnel  FT.");
+                    //Serial.println("rcvTunnel  FT.");
                     uint8_t rcvTunIdx = PayloadData[tk_idx][3];
                     memcpy(RcvBuddy, &PayloadData[tk_idx][FOUR], OCT);
                     bool invCheck = false;
@@ -1323,15 +1323,15 @@ void transformTask(void *pvParameters) {
 
 void electricTask(void *pvParameters) {
   uint8_t loraIdx;
-  Serial.println("electricTask  successfully.");
+  //Serial.println("electricTask  successfully.");
   while (1) {
     if (xQueueReceive(loraQueue, &loraIdx, portMAX_DELAY)) {
       while (digitalRead(BusyPin) == HIGH || rfMode == false) {
         taskYIELD();
         vTaskDelay(pdMS_TO_TICKS(100));
       }
-      Serial.printf("\n electricTask   : %d\n", SndPkt[loraIdx].pktLen);
-      //for (int i = 0; i < SndPkt[loraIdx].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[loraIdx].payloadData[i]);
+      //Serial.printf("\n electricTask   : %d\n", SndPkt[loraIdx].pktLen);
+      //for (int i = 0; i < SndPkt[loraIdx].pktLen; i++) //Serial.printf("%d:%02X ", i, SndPkt[loraIdx].payloadData[i]);
       TransmitState = radio.startTransmit(SndPkt[loraIdx].payloadData, SndPkt[loraIdx].pktLen);
     }
     taskYIELD();
@@ -1347,7 +1347,7 @@ void httpdTask(void *pvParameters) {
   httpServer.on("/chat.js", HTTP_GET, handleChatJS);
 
   httpServer.begin();
-  Serial.println("httpdTask  create successfully.");
+  //Serial.println("httpdTask  create successfully.");
   while (1) {
 
 
@@ -1368,7 +1368,7 @@ void sessionCipherTask(void *pvParameters) {
   uint8_t buddyPublicKey[KEY];
   uint8_t SndIndex = 0;
   uint8_t cipherResult = 0;
-  Serial.println("sessionCipherTask  successfully.");
+  //Serial.println("sessionCipherTask  successfully.");
   while (1) {
     // Wait for new data indefinitely (sleeps when queue is empty)
     if (xQueueReceive(wsEventQueue, &deq_idx, portMAX_DELAY)) {
@@ -1376,7 +1376,7 @@ void sessionCipherTask(void *pvParameters) {
       switch (WsQueue[deq_idx].payloadData[0]) {
         case WSP:
           {
-            Serial.println("sndWhisper  FT.");
+            //Serial.println("sndWhisper  FT.");
             SndIndex = WsQueue[deq_idx].payloadData[1];
             SndPkt[lt].payloadData[0] = WSP;
             memcpy(&SndPkt[lt].payloadData[1], &WhisperList[SndIndex].buddyIndex, 2);
@@ -1391,7 +1391,7 @@ void sessionCipherTask(void *pvParameters) {
           break;
         case MET:
           {
-            Serial.println("\n sndMeeting  FT. \n ");
+            //Serial.println("\n sndMeeting  FT. \n ");
             SndIndex = WsQueue[deq_idx].payloadData[1];
             SndPkt[lt].payloadData[0] = MET;
             memcpy(&SndPkt[lt].payloadData[1], &MeetingList[SndIndex].sessionId, OCT);
@@ -1423,7 +1423,7 @@ void sessionCipherTask(void *pvParameters) {
 
             MeetingList[MeetingTopIndex].status = 3;
             if (WsQueue[deq_idx].pktLen < 40) {
-              Serial.printf("\n safe %d #  create  %d \n.", MeetingTopIndex, WsQueue[deq_idx].pktLen);
+              //Serial.printf("\n safe %d #  create  %d \n.", MeetingTopIndex, WsQueue[deq_idx].pktLen);
               meeting_room_len = WsQueue[deq_idx].pktLen - 2;
 
               randomSeed(millis() + WsQueue[deq_idx].payloadData[meeting_room_len]);
@@ -1436,7 +1436,7 @@ void sessionCipherTask(void *pvParameters) {
               }
 
             } else {
-              Serial.printf("\n temp create  %d \n.", WsQueue[deq_idx].pktLen);
+              //Serial.printf("\n temp create  %d \n.", WsQueue[deq_idx].pktLen);
               uint8_t tmp_room[KEY];
               uint8_t tmp_key[KEY];
               uint8_t tmp_iv[HKEY];
@@ -1488,7 +1488,7 @@ void sessionCipherTask(void *pvParameters) {
                   SndPkt[lt].payloadData[42] = grtLen;
                   memcpy(&SndPkt[lt].payloadData[43], &WsQueue[deq_idx].payloadData[2], grtLen);
                   SndPkt[lt].pktLen = grtLen + 43;
-                  Serial.printf(" \n sndGreeting %d FT:%d. \n", WsQueue[deq_idx].pktLen, SndPkt[lt].pktLen);
+                  //Serial.printf(" \n sndGreeting %d FT:%d. \n", WsQueue[deq_idx].pktLen, SndPkt[lt].pktLen);
                   xQueueSend(loraQueue, &lt, portMAX_DELAY);
                   lt = (lt + 1) & 31;
                 }
@@ -1496,7 +1496,7 @@ void sessionCipherTask(void *pvParameters) {
 
               case CFM:  //SSN,CFM,invitation_8,myPublic_32,MyIV_16,ciphered(buddyId_2,sessionId_8,cfmMsg_vl)
                 {
-                  Serial.println("sndConfirm  FT.");
+                  //Serial.println("sndConfirm  FT.");
                   uint8_t gretIndex = WsQueue[deq_idx].payloadData[2];
                   uint8_t cfmLen = WsQueue[deq_idx].pktLen - 3;
                   while (WhisperList[WhisperIndex].status != 0) {
@@ -1576,7 +1576,7 @@ void sessionCipherTask(void *pvParameters) {
                       deqUncipher[1] = WhisperIndex % ULIST;
                       memcpy(&deqUncipher[2], WhisperList[WhisperIndex].sessionId, OCT);
                       memcpy(tmpIV, MyIV, HKEY);
-                      Serial.printf("sndTunnel name      %d\n.", WhisperList[WhisperIndex].nameLen);
+                      //Serial.printf("sndTunnel name      %d\n.", WhisperList[WhisperIndex].nameLen);
 
                       // WhisperList[WhisperIndex].name
 
@@ -1605,7 +1605,7 @@ void sessionCipherTask(void *pvParameters) {
                 break;
               case IVM:  //4,4,buddyIndex_2,buddy_8,MyIV_16,ciphered(mtSessionId_8,mtSharedKey_32,wsSessionId_8)
                 {
-                  Serial.println("invite   meeting.");
+                  //Serial.println("invite   meeting.");
                   uint8_t metIndex;
                   uint8_t tmp[TM];
                   SndIndex = WsQueue[deq_idx].payloadData[2];
@@ -1637,7 +1637,7 @@ void websocketTask(void *pvParameters) {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   vTaskDelay(pdMS_TO_TICKS(1000));
-  Serial.println("websocketTask  successfully.");
+  //Serial.println("websocketTask  successfully.");
 
 
   while (1) {

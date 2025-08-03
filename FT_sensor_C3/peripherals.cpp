@@ -266,7 +266,7 @@ void SensorTask(void *pvParameters) {
       WsQueue[0].payloadData[2] = 1;
       WsQueue[0].payloadData[10] = '*';
       GPSjson["W"] = 1;  //sos gps
-      GPSjson["ST"] = MyName;
+      GPSjson["ST"] = "sensor";
       //for (int i = 0; i < 6; i++) Serial.printf("%d:%02X ", i, FavoriteMAC[0][i]);
       memcpy(&WsQueue[0].payloadData[3], FavoriteMAC[0], 6);
 
@@ -274,11 +274,11 @@ void SensorTask(void *pvParameters) {
       WsQueue[0].pktLen = sosStr.length() + 1;
       sosStr.getBytes((unsigned char *)&WsQueue[0].payloadData[11], WsQueue[0].pktLen);
       WsQueue[0].pktLen = WsQueue[0].pktLen + 11;
-      memcpy(SndPkt[0].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
-      SndPkt[0].pktLen = WsQueue[0].pktLen;
+      memcpy(SndPkt[PeripheralsMode].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
+      SndPkt[PeripheralsMode].pktLen = WsQueue[0].pktLen;
       vTaskDelay(5000 / portTICK_PERIOD_MS);
       //for (int i = 0; i < SndPkt[takingHBR].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[takingHBR].payloadData[i]);
-      xQueueSend(loraQueue, 0, portMAX_DELAY);
+      xQueueSend(loraQueue, &PeripheralsMode, portMAX_DELAY);
     }else{
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
