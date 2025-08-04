@@ -787,7 +787,7 @@ function closeForm(formId) {
 
 function deliverSOS() {
 
-     
+
 
     alertMsg = document.getElementById("alertMsg").value + '*' + gpsJsonStr;
     let alertMsgArray = MsgTextEncoder.encode(alertMsg);
@@ -901,6 +901,7 @@ function handleSettingsForm() {
 
     const config = ConfigList; // Ensure config is an object
     // Dynamically generate input fields
+    /*
     Object.keys(config).forEach(key => {
         // Create label element
         const label = document.createElement("label");
@@ -920,6 +921,46 @@ function handleSettingsForm() {
             input.setAttribute("type", "text");
             input.setAttribute("id", key);
             input.value = config[key]; // Set value safely
+        }
+
+        // Append elements to form
+        label.appendChild(input);
+        form.appendChild(label);
+        form.appendChild(document.createElement("br"));
+    });
+*/
+
+    const readOnlyMACKeys = ["MAC_0", "MAC_1", "MAC_2", "MAC_3", "MAC_4", "MAC_5" ];
+
+    const NoneDisplay = ["T" ];
+    Object.keys(config).forEach(key => {
+        // Create label element
+        const label = document.createElement("label");
+        label.textContent = `${key}: `;
+
+        let input;
+
+        if (readOnlyMACKeys.includes(key)) {
+            // Create read-only input for MAC addresses
+            input = document.createElement("input");
+            input.setAttribute("type", "text");
+            input.setAttribute("id", key);
+            input.setAttribute("readonly", true);
+            input.value = typeof config[key] === "number"
+                ? " " + config[key].toString(16).toUpperCase()
+                : config[key];
+        } else if (typeof config[key] === "boolean") {
+            // Create checkbox for boolean values
+            input = document.createElement("input");
+            input.setAttribute("type", "checkbox");
+            input.setAttribute("id", key);
+            input.checked = config[key];
+        } else {
+            // Create text input for other values
+            input = document.createElement("input");
+            input.setAttribute("type", "text");
+            input.setAttribute("id", key);
+            input.value = config[key];
         }
 
         // Append elements to form

@@ -615,11 +615,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         }
         break;
       case WStype_TEXT:
-        {
-          // //Serial.printf("WStype_TEXT from browser #%u: %s\n", length, payload);
-          memset(&WsText, 0, length);
-          memcpy(&WsText, payload, length);
-          WsTextLen = 1;
+        { 
           jsonReceived((char *)payload);
 
           //xQueueSend(wsEventQueue, &enque_idx, portMAX_DELAY);
@@ -1045,7 +1041,7 @@ void transformTask(void *pvParameters) {
                         } else {
                           TurnOnWifi = 1;
                         }
-                        FTconfig.Role = PeripheralsMode;
+                       // FTconfig.Role = PeripheralsMode;
                         NeedReboot = true;
                       }
 

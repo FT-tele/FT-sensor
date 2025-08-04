@@ -29,14 +29,14 @@
 //-----------------------------Switch Pin for remote control
 #define IN_OR_OUT 1
 #define SWITCH2 18
-#define SWITCH3 19 
+#define SWITCH3 19
 
 //-----------------------------RGB ws2812
 #define LED_PIN 1
 #define BRIGHTNESS 40
 
 
-#define MENU_BTN 0  //long press SOS 
+#define MENU_BTN 0  //long press SOS
 #define BEEPER 12
 #define GPS_INT 1000000
 
@@ -158,12 +158,12 @@ MAC_6; string
 //-------------------------------------------------------hardware
 
 //-----------------------------peripherals
-extern uint8_t EnableGPS;    // if  peripherals attached 
-extern uint8_t PeripheralsMode;    // if  peripherals attached 
-extern bool NeedReboot;    // if  peripherals attached   
-extern uint8_t EnterSOS; 
-extern uint8_t LocationSaveFreq;  //
-          //
+extern uint8_t EnableGPS;        // if  peripherals attached
+extern uint8_t PeripheralsMode;  // if  peripherals attached
+extern bool NeedReboot;          // if  peripherals attached
+extern uint8_t EnterSOS;
+extern uint8_t LocationSaveFreq;     //
+                                     //
 extern uint8_t RelayNum;             //from the last PathGpsList position count , received sensorRelay broadcast
 extern uint8_t FavoriteMAC[OCT][6];  //emergency contact  MAC,first is selfMac
 
@@ -171,7 +171,7 @@ extern volatile bool TurnOnWifi;  //0 off / 1 on
 
 extern uint8_t LedRed;
 extern uint8_t LedGreen;
-extern uint8_t LedBlue; 
+extern uint8_t LedBlue;
 extern StaticJsonDocument<200> GPSjson;
 
 
@@ -235,10 +235,10 @@ extern TaskHandle_t httpdTaskHandle;
 extern TaskHandle_t websocketTaskHandle;
 
 extern TaskHandle_t gpsTaskHandle;
-extern TaskHandle_t sensorTaskHandle; 
+extern TaskHandle_t sensorTaskHandle;
 
 
-extern TaskHandle_t listenTaskHandle; 
+extern TaskHandle_t listenTaskHandle;
 
 
 extern esp_timer_handle_t timer;
@@ -278,7 +278,7 @@ extern volatile uint8_t LastMeetingB;  // last meeting id for active
 extern uint8_t GreetingCode[OCT];
 extern bool SandboxFlag;
 
- 
+
 
 //-----------------------------Contact
 
@@ -303,10 +303,6 @@ extern volatile uint16_t WhisperIndex;
 extern volatile uint16_t MeetingIndex;
 
 
-extern uint8_t WsText[512];
-
-extern volatile uint8_t WsTextLen;
-
 //--------------------------------------------------------------------------------------------------------struct
 //-----------------------------struct define
 
@@ -318,11 +314,11 @@ typedef struct SystemConfig {
   uint8_t PktBits;
   uint8_t MyNameLen;
   uint8_t MyName[KEY];
-  uint8_t Mode;//turnOnWifi
-  uint8_t Role;  //FT / Repeater / Sensor / IOT manager /Camera
+  uint8_t Mode;  //FT / Repeater / Sensor / IOT manager /Camera
   uint8_t ForwardGroup;
-
   uint8_t allowFound;
+  uint8_t oledLanguage;
+  uint8_t WifiMode;  // 0 disable /1
   //-----------------------------radio setting
   float Frequency;
   float Bandwidth;

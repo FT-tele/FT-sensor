@@ -226,12 +226,13 @@ void SensorTask(void *pvParameters) {
     Serial.println("MPU6050 not found!");
     vTaskDelete(NULL);
   }
-
+  int analogValue = 0;
+  uint8_t sosType = 0;
   // Configure MPU6050 ranges and filters
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
-  
+
   Serial.println(" SensorTask task initialized");
 
   while (1) {
@@ -245,20 +246,47 @@ void SensorTask(void *pvParameters) {
 
     // Display sensor data
 
-    GPSjson["tmp"] = temperature;
-    GPSjson["280alt"] = altitude;
-    GPSjson["aX"] = accel.acceleration.x;
-    GPSjson["aY"] = accel.acceleration.y;
-    GPSjson["aZ"] = accel.acceleration.z;
-    GPSjson["gX"] = gyro.gyro.x;
-    GPSjson["gY"] = gyro.gyro.y;
-    GPSjson["gZ"] = gyro.gyro.z;
 
-    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second 
-    if (digitalRead(IN_OR_OUT) == HIGH) {
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second
+    switch (PeripheralsMode) {
+      case 2:
+        {
+          if (digitalRead(IN_OR_OUT) == HIGH) {
 
-      //takingHBR = 1;
+            sosType = 2;
+
+            GPSjson["ST"] = "airPressureSensor";
+            GPSjson["tmp"] = temperature;
+            GPSjson["280alt"] = altitude;
+            GPSjson["aX"] = accel.acceleration.x;
+            GPSjson["aY"] = accel.acceleration.y;
+            GPSjson["aZ"] = accel.acceleration.z;
+            GPSjson["gX"] = gyro.gyro.x;
+            GPSjson["gY"] = gyro.gyro.y;
+            GPSjson["gZ"] = gyro.gyro.z;
+          }
+        }
+        break;
+
+      case 3:
+        {
+          analogValue = analogRead(IN_OR_OUT);
+          if (analogValue > 100) {
+            sosType = 3;
+            GPSjson["ST"] = "waterSensor";
+            GPSjson["waterHeight"] = analogValue;
+          }
+          // Print the sensor value to the serial monitor
+
+          // Serial.printf("Analog value:%d \n", analogValue);
+        }
+        break;
+    }
+
+    if (sosType > 0) {
+
       ////alert : direction{trigger 0},type{1},srcMac_6,GPSjson
+      sosType = 0;
       String sosStr = "";
       memset(WsQueue[0].payloadData, 0, PKT);
       WsQueue[0].payloadData[0] = 2;
@@ -266,7 +294,6 @@ void SensorTask(void *pvParameters) {
       WsQueue[0].payloadData[2] = 1;
       WsQueue[0].payloadData[10] = '*';
       GPSjson["W"] = 1;  //sos gps
-      GPSjson["ST"] = "sensor";
       //for (int i = 0; i < 6; i++) Serial.printf("%d:%02X ", i, FavoriteMAC[0][i]);
       memcpy(&WsQueue[0].payloadData[3], FavoriteMAC[0], 6);
 
@@ -279,9 +306,9 @@ void SensorTask(void *pvParameters) {
       vTaskDelay(5000 / portTICK_PERIOD_MS);
       //for (int i = 0; i < SndPkt[takingHBR].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[takingHBR].payloadData[i]);
       xQueueSend(loraQueue, &PeripheralsMode, portMAX_DELAY);
-    }else{
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 //

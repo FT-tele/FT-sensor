@@ -6,7 +6,7 @@
 
 //-----------------------------peripherals
 uint8_t EnableGPS = 1;        // if  peripherals attached
-uint8_t PeripheralsMode = 1;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3~N others
+uint8_t PeripheralsMode = 3;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3 anlog ;4~N others
 bool NeedReboot = false;       // if  peripherals attached 
 uint8_t EnterSOS = 0;         //waiting for ack
 uint8_t LocationSaveFreq = 1;
@@ -140,12 +140,7 @@ volatile uint16_t WhisperIndex = 0;
 volatile uint16_t MeetingIndex = 0;
 
 
-
-
-
-uint8_t WsText[512];
-
-volatile uint8_t WsTextLen;
+ 
 
 //-----------------------------instance
 

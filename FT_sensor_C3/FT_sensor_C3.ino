@@ -69,8 +69,8 @@ void setup() {
 
 
 
-  //Serial.printf("  \n    Free heap: %d\n", esp_get_free_heap_size());
-  //Serial.printf("\n Minimum WiFi.mode  free heap: %d\n", esp_get_minimum_free_heap_size());
+  Serial.printf("  \n    Free heap: %d\n", esp_get_free_heap_size());
+  Serial.printf("\n Minimum WiFi.mode  free heap: %d\n", esp_get_minimum_free_heap_size());
 
 
 
@@ -114,6 +114,17 @@ void setup() {
     vTaskDelay(6000 / portTICK_PERIOD_MS);
 
     pinMode(IN_OR_OUT, INPUT_PULLDOWN);
+  }
+
+
+  if (PeripheralsMode == 3) {
+
+    Wire.begin(SDA_PIN, SCK_PIN);
+    Wire.setClock(400000);
+
+    xTaskCreatePinnedToCore(SensorTask, "SensorTask", 4096, NULL, 4, &sensorTaskHandle, CORE0);
+    vTaskDelay(6000 / portTICK_PERIOD_MS);
+    Serial.println("\n analog start \n");
   }
 
   esp_timer_create(&timer_args, &timer);
