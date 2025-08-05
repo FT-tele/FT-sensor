@@ -147,6 +147,7 @@ bool resetConfig(uint8_t option) {
     LittleFS.remove("/Session.bin");
     //Serial.println("removed Session.bin   ");
   }
+  ESP.restart();
 }
 
 bool saveConfig() {
@@ -261,20 +262,25 @@ void sessionToFront() {
 void settingToFront() {
   JsonDocument writeJson;
 
-  writeJson["WhisperFlag"] = (FTconfig.PktBits & BIT_WSP) ? true : false;
-  writeJson["MeetingFlag"] = (FTconfig.PktBits & BIT_MET) ? true : false;
-  writeJson["SpeechFlag"] = (FTconfig.PktBits & BIT_SPH) ? true : false;
-  writeJson["GreetingFlag"] = (FTconfig.PktBits & BIT_SSN) ? true : false;
-  writeJson["AlertFlag"] = (FTconfig.PktBits & BIT_ALT) ? true : false;
-  writeJson["MyName"] = String(reinterpret_cast<char *>(MyName));
-  writeJson["SandboxFlag"] = SandboxFlag;
+  //writeJson["WhisperFlag"] = (FTconfig.PktBits & BIT_WSP) ? true : false;
+  //writeJson["MeetingFlag"] = (FTconfig.PktBits & BIT_MET) ? true : false;
+  //writeJson["SpeechFlag"] = (FTconfig.PktBits & BIT_SPH) ? true : false;
+  //writeJson["GreetingFlag"] = (FTconfig.PktBits & BIT_SSN) ? true : false;
+  //writeJson["AlertFlag"] = (FTconfig.PktBits & BIT_ALT) ? true : false;
+  writeJson["MyName"] = String(reinterpret_cast<char *>(FTconfig.MyName));
+  writeJson["RebootFT"] = false;
+  writeJson["SavingConfig"] = false;
+  writeJson["SSID"] = String(reinterpret_cast<char *>(FTconfig.SSID));          // FTconfig.SSID;
+  writeJson["Password"] = String(reinterpret_cast<char *>(FTconfig.Password));  //FTconfig.Password;
+  writeJson["WifiMode"] = FTconfig.WifiMode;
+  writeJson["ForwardGroup"] = FTconfig.ForwardGroup;
+  writeJson["ForwardRSSI"] = FTconfig.ForwardRSSI;
+
+  writeJson["PeripheralsMode"] = FTconfig.PeripheralsMode;
   writeJson["allowFound"] = FTconfig.allowFound;
+  writeJson["oledLanguage"] = FTconfig.oledLanguage;
+  writeJson["EnableGPS"] = FTconfig.EnableGPS;
 
-
-
-  writeJson["SSID"] = SSID;
-  writeJson["Password"] = Password;
-  writeJson["WifiMode"] = WifiMode;
   writeJson["Frequency"] = FTconfig.Frequency;
   writeJson["Bandwidth"] = FTconfig.Bandwidth;
   writeJson["SpreadFactor"] = FTconfig.SpreadFactor;
@@ -282,8 +288,6 @@ void settingToFront() {
   writeJson["RadioPower"] = FTconfig.RadioPower;
   writeJson["SyncWord"] = FTconfig.SyncWord;
   writeJson["PreambleLength"] = FTconfig.PreambleLength;
-  writeJson["ForwardGroup"] = FTconfig.ForwardGroup;
-  writeJson["ForwardRSSI"] = FTconfig.ForwardRSSI;
 
   writeJson["MAC_0"] = FavoriteMAC[0][0];
   writeJson["MAC_1"] = FavoriteMAC[0][1];
@@ -292,7 +296,6 @@ void settingToFront() {
   writeJson["MAC_4"] = FavoriteMAC[0][FOUR];
   writeJson["MAC_5"] = FavoriteMAC[0][5];
   writeJson["T"] = 1;
-  writeJson["SavingConfig"] = 0;
   String configJson;
   serializeJson(writeJson, configJson);
   webSocket.broadcastTXT(configJson);
@@ -335,24 +338,30 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
   return true;
 }
 
- void jsonReceived(String jsonStr)  //===================================
+void jsonReceived(String jsonStr)  //===================================
 {
   JsonDocument jsonObj;
   deserializeJson(jsonObj, jsonStr);
   uint8_t dataType = jsonObj["T"];
+
+  Serial.println(jsonStr);
   switch (dataType) {
     case 0:  // system command
       {
         uint8_t cmdType = jsonObj["cmdType"];
-        if (cmdType == 1)
+        if (cmdType == 1) {
           ESP.restart();
-        if (cmdType == 2)
-          resetConfig(1);
-        // if (cmdType == 3) export configuration and contact;
+        }
+        if (cmdType == 2) {
+          LittleFS.remove("/SystemConfig.bin");
+          LittleFS.remove("/Session.bin");
+          ESP.restart();
+        }
       }
       break;
     case 1:  // ---------------------------------------update config
       {
+
         bool WhisperFlag = jsonObj["WhisperFlag"];
         bool MeetingFlag = jsonObj["MeetingFlag"];
         bool SpeechFlag = jsonObj["SpeechFlag"];
@@ -385,28 +394,6 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
           FTconfig.PktBits &= ~BIT_ALT;  // Clear Bit 3
         }
 
-        SandboxFlag = jsonObj["SandboxFlag"];
-        WifiMode = jsonObj["WifiMode"];
-        String nameTmp = jsonObj["MyName"].as<String>();
-        MyNameLen = nameTmp.length();
-        memset(MyName, 0, KEY);
-        nameTmp.getBytes(MyName, MyNameLen);
-
-
-
-        memset(FTconfig.SSID, 0, KEY);
-        memset(FTconfig.Password, 0, KEY);
-
-        String SSID = jsonObj["SSID"].as<String>();
-        String Password = jsonObj["Password"].as<String>();
-
-        uint8_t PasswordLen = Password.length();
-        Password.getBytes(FTconfig.Password, PasswordLen);
-
-        uint8_t ssidLen = SSID.length();
-        SSID.getBytes(FTconfig.SSID, ssidLen);
-
-
         FTconfig.Frequency = jsonObj["Frequency"];
         FTconfig.Bandwidth = jsonObj["Bandwidth"];
         FTconfig.SpreadFactor = jsonObj["SpreadFactor"];
@@ -416,14 +403,7 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
         FTconfig.PreambleLength = jsonObj["PreambleLength"];
         FTconfig.allowFound = jsonObj["allowFound"];
         FTconfig.oledLanguage = jsonObj["oledLanguage"];
-        /* temp mac only for experiment
-        FavoriteMAC[0][0] = jsonObj["MAC_0"];
-        FavoriteMAC[0][1] = jsonObj["MAC_1"];
-        FavoriteMAC[0][2] = jsonObj["MAC_2"];
-        FavoriteMAC[0][3] = jsonObj["MAC_3"];
-        FavoriteMAC[0][FOUR] = jsonObj["MAC_4"];
-        FavoriteMAC[0][5] jsonObj["MAC_5"];
-        */
+
         int ForwardGroupIdx = jsonObj["ForwardGroup"];
         FTconfig.ForwardRSSI = jsonObj["ForwardRSSI"];
         PKT_BITS = FTconfig.PktBits;
@@ -435,31 +415,45 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
 
         bool SavingConfig = jsonObj["SavingConfig"];
         bool SavingNewContact = jsonObj["SavingNewContact"];
-        bool needReboot = jsonObj["needReboot"];
         radioConfigUpdate();
-        //Serial.printf("\n MyNameLen %d \n", MyNameLen);
-        Serial.println(nameTmp);
 
-        if (!SandboxFlag) {
+        RebootFT = jsonObj["RebootFT"];
 
-          FTconfig.MyNameLen = MyNameLen;
+        //Serial.printf("\n SavingConfig %d  ,  RebootFT %d  ", SavingConfig, RebootFT);
+
+        if (SavingConfig) {
+
+
+          FTconfig.WifiMode = jsonObj["WifiMode"];
+          FTconfig.EnableGPS = jsonObj["EnableGPS"];
+
+          FTconfig.PeripheralsMode = jsonObj["PeripheralsMode"];
           memset(FTconfig.MyName, 0, KEY);
+          memset(FTconfig.SSID, 0, KEY);
+          memset(FTconfig.Password, 0, KEY);
+
+
+
+          String nameTmp = jsonObj["MyName"].as<String>();
+          MyNameLen = nameTmp.length() + 1;
           nameTmp.getBytes(FTconfig.MyName, MyNameLen);
 
+          FTconfig.MyNameLen = MyNameLen + 1;
+
+          String SSID = jsonObj["SSID"].as<String>();
+          uint8_t ssidLen = SSID.length() + 1;
+          SSID.getBytes(FTconfig.SSID, ssidLen);
+
+          String Password = jsonObj["Password"].as<String>();
+          uint8_t PasswordLen = Password.length() + 1;
+          Password.getBytes(FTconfig.Password, PasswordLen);
 
           saveConfig();
-          /*
-          File file = LittleFS.open("/SystemConfig.bin", "w");
-          if (!file) {
-            Serial.println("Failed to save SystemConfig file    ");
-          }
 
-          file.write((byte *)&FTconfig, sizeof(SystemConfig));
-          file.close();
-          vTaskDelay(200 / portTICK_PERIOD_MS);
-          Serial.println("  SystemConfig file  saved successful  ");
-          writeSessionList(WhisperList, WhisperNum, MeetingList, MeetingNum);
-          */
+
+
+          if (RebootFT)
+            ESP.restart();
         }
       }
       break;
@@ -504,7 +498,9 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
           //Serial.printf("MeetingList namd %s     %d.    \n", MeetingList[sessionIndex].name, MeetingList[sessionIndex].nameLen);
           //Serial.printf("\n MeetingNum %d , MeetingNew %d , MeetingTopIndex %d   \n", MeetingNum, MeetingNew, MeetingTopIndex);
         }
-        //webSocket.broadcastTXT(ReloadStr);
+
+
+        writeSessionList(WhisperList, WhisperNum, MeetingList, MeetingNum);
       }
       break;
     case 4:  // keyUpdate
@@ -557,6 +553,7 @@ bool writeSessionList(ContactStruct *whisperList, uint16_t whisperSize, ContactS
   }
 }
 
+
 //-----------------------------AES
 void keyUpdate() {
   //if (Greeting) {
@@ -589,7 +586,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       case WStype_CONNECTED:
         {
           IPAddress ip = webSocket.remoteIP(num);
-          //Serial.printf("Client #%u connected from %s\n", num, ip.toString().c_str());
           vTaskDelay(pdMS_TO_TICKS(100));
           settingToFront();
           vTaskDelay(pdMS_TO_TICKS(500));
@@ -615,10 +611,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         }
         break;
       case WStype_TEXT:
-        { 
+        {
           jsonReceived((char *)payload);
-
-          //xQueueSend(wsEventQueue, &enque_idx, portMAX_DELAY);
         }
         break;
 
@@ -633,10 +627,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
           } else {
             WsQueue[enque_idx].pktLen = length;
             memcpy(WsQueue[enque_idx].payloadData, payload, length);
-
             xQueueSend(wsEventQueue, &enque_idx, portMAX_DELAY);
-            enque_idx = (enque_idx + 1) & 31;
-            //Serial.printf("\nWStype_BIN   . %d\n", enque_idx);
+            enque_idx = (enque_idx + 1) & 15;
           }
         }
 
@@ -709,8 +701,9 @@ bool initInfrast() {
       FTconfig.PktBits |= BIT_MET;
       FTconfig.PktBits |= BIT_SPH;
 
-
       FTconfig.allowFound = 1;
+      FTconfig.WifiMode = 1;
+      FTconfig.EnableGPS = 0;
       memset(FTconfig.MyName, 0, KEY);
       memcpy(FTconfig.MyName, "FT", 2);
       FTconfig.MyNameLen = 3;
@@ -720,7 +713,7 @@ bool initInfrast() {
 
     } else {
 
-      TurnOnWifi = FTconfig.Mode;
+      TurnOnWifi = FTconfig.WifiMode;
 
       keyUpdate();
       //Serial.println(" loading SessionList .");
@@ -738,42 +731,26 @@ bool initInfrast() {
 
 void wifiMode() {
 
-  if (WifiMode == 0) {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SSID, Password);
-    //Serial.println(" wifi-STA started\n");
-  }
-  if (WifiMode == 1) {
+  if (FTconfig.SSID[0] == 0) {
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(SSID, Password);
-    //Serial.println(" wifi-AP started\n");
+  } else {
+
+    String SSID = String(reinterpret_cast<char *>(FTconfig.SSID));
+    String Password = String(reinterpret_cast<char *>(FTconfig.Password));
+    if (FTconfig.WifiMode == 2) {
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(SSID, Password);
+    }
+
+    if (FTconfig.WifiMode == 1) {
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP(SSID, Password);
+      Serial.println(" wifi-AP started\n");
+    }
   }
 }
 
 
-bool testWifi(void) {
-  int connectAttmempt = 0;
-  while (connectAttmempt < 60) {
-
-    if (WifiMode == 0) {
-      if (WiFi.status() == WL_CONNECTED) {
-        //Serial.println("  Wifi  STA CONNECTED ");
-        return true;
-      }
-    }
-    if (WifiMode == 1) {
-      if (WiFi.softAPgetStationNum() > 0) {
-        //Serial.println("    softAP CONNECTED ");
-        return true;
-      }
-    }
-
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    connectAttmempt++;
-    // esp_task_wdt_reset();
-  }
-  return false;
-}
 
 
 bool compareID(byte *array1, byte *array2, uint8_t cmpLength) {
@@ -1026,24 +1003,39 @@ void transformTask(void *pvParameters) {
                     if (checkFavList == 0) {  //
 
                       uint8_t cmdSerialNumber = PayloadData[tk_idx][10 + alt_offset];
-                      uint8_t ch01 = PayloadData[tk_idx][11 + alt_offset];
-                      uint8_t ch02 = PayloadData[tk_idx][12 + alt_offset];
-                      uint8_t ch03 = PayloadData[tk_idx][13 + alt_offset];
-                      uint8_t ch04 = PayloadData[tk_idx][14 + alt_offset];
-                      uint8_t ch05 = PayloadData[tk_idx][15 + alt_offset];
+                      uint8_t beeper_01 = PayloadData[tk_idx][11 + alt_offset];
+                      uint8_t sw_02 = PayloadData[tk_idx][12 + alt_offset];
+                      uint8_t sw_03 = PayloadData[tk_idx][13 + alt_offset];
+                      uint8_t cmd_04 = PayloadData[tk_idx][14 + alt_offset];
+                      uint8_t value_05 = PayloadData[tk_idx][15 + alt_offset];
                       //Serial.printf("   sos cmd sn: %d\t ch1~5 %d\t %d\t %d\t %d\t %d\t", cmdSerialNumber, ch01, ch02, ch03, ch04, ch05);
 
-                      if (ch05 != PeripheralsMode) {
-                        PeripheralsMode = ch05;
-                        if (ch05 == 0) {
-                          TurnOnWifi = 1;
+                      if (beeper_01 == 1)
+                        digitalWrite(BEEPER, HIGH);
+                      else
+                        digitalWrite(BEEPER, LOW);
+                      if (FTconfig.PeripheralsMode > 0) {
+                        Serial.printf(" \n value_05 %d ", value_05);
 
-                        } else {
-                          TurnOnWifi = 1;
-                        }
-                       // FTconfig.Role = PeripheralsMode;
-                        NeedReboot = true;
+                        pinMode(SWITCH2, OUTPUT);
+                        pinMode(SWITCH3, OUTPUT);
+
+                        if (sw_02 == 1)
+                          digitalWrite(BEEPER, HIGH);
+                        else
+                          digitalWrite(BEEPER, LOW);
+
+                        if (sw_03 == 1)
+                          digitalWrite(BEEPER, HIGH);
+                        else
+                          digitalWrite(BEEPER, LOW);
                       }
+                      if (cmd_04 == 1) {
+                        if (value_05 != FTconfig.PeripheralsMode) {
+                          FTconfig.PeripheralsMode = value_05;
+                        }
+                      }
+
 
                       PayloadData[tk_idx][0] = 2;
                       PayloadData[tk_idx][1] = 0;
@@ -1393,7 +1385,7 @@ void httpdTask(void *pvParameters) {
 
 
 void sessionCipherTask(void *pvParameters) {
-  uint8_t deq_idx;
+  uint8_t deq_idx = 0;
   uint8_t sessionId[OCT];
   uint8_t deqUncipher[PKT];
   uint8_t deqCiphered[PKT];

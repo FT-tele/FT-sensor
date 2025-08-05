@@ -22,14 +22,15 @@
 #define SDA_PIN 8
 #define SCK_PIN 9
 //-----------------------------GPS UART
-#define TX_PIN 21
+
 #define RX_PIN 20
+#define TX_PIN 21
 
 #define MIN_MILL 6000
 //-----------------------------Switch Pin for remote control
 #define IN_OR_OUT 1
-#define SWITCH2 18
-#define SWITCH3 19
+#define SWITCH2 20
+#define SWITCH3 21
 
 //-----------------------------RGB ws2812
 #define LED_PIN 1
@@ -158,9 +159,7 @@ MAC_6; string
 //-------------------------------------------------------hardware
 
 //-----------------------------peripherals
-extern uint8_t EnableGPS;        // if  peripherals attached
-extern uint8_t PeripheralsMode;  // if  peripherals attached
-extern bool NeedReboot;          // if  peripherals attached
+extern bool NeedReboot;  // if  peripherals attached
 extern uint8_t EnterSOS;
 extern uint8_t LocationSaveFreq;     //
                                      //
@@ -188,7 +187,6 @@ extern size_t frame_len[KEY];
 
 extern volatile uint8_t Role;      //FT / Relay(PktDensity<6&&rssi< x Dbm) / Sensor / Gateway(IOT manager) /Camera /Kids
 extern volatile uint8_t Mode;      //0 FIT / 1 TOP /2  Forward  /3  sensorRelay /4  SOS
-extern volatile uint8_t WifiMode;  //AP / STA
 extern volatile bool PhonePermit;  //allow send opus audio out,250 && center freq only permit SOS mode
 extern volatile int timeZone;      //timeZone offset UTC
 extern volatile uint8_t MissionGroup;
@@ -276,7 +274,7 @@ extern volatile uint8_t LastMeetingB;  // last meeting id for active
 
 
 extern uint8_t GreetingCode[OCT];
-extern bool SandboxFlag;
+extern bool RebootFT;
 
 
 
@@ -319,6 +317,8 @@ typedef struct SystemConfig {
   uint8_t allowFound;
   uint8_t oledLanguage;
   uint8_t WifiMode;  // 0 disable /1
+  uint8_t EnableGPS;
+  uint8_t PeripheralsMode;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3 anlog ;4 ~N others
   //-----------------------------radio setting
   float Frequency;
   float Bandwidth;
@@ -375,7 +375,7 @@ typedef struct gpsStruct {
 
 //-----------------------------instance
 
-extern PktStruct WsQueue[KEY];  // ws_BIN received
+extern PktStruct WsQueue[HKEY];  // ws_BIN received
 extern PktStruct SndPkt[KEY];
 
 extern greetingStruct GreetingList[OCT];

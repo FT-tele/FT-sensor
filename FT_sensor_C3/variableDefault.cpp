@@ -4,9 +4,7 @@
 
 //-------------------------------------------------------hardware
 
-//-----------------------------peripherals
-uint8_t EnableGPS = 1;        // if  peripherals attached
-uint8_t PeripheralsMode = 3;  // 0  wifi;1 speaker;2 bmp280 & mpu6050; 3 anlog ;4~N others
+//-----------------------------peripherals 
 bool NeedReboot = false;       // if  peripherals attached 
 uint8_t EnterSOS = 0;         //waiting for ack
 uint8_t LocationSaveFreq = 1;
@@ -30,8 +28,7 @@ size_t frame_len[KEY];
 //-----------------------------settings
 
 volatile uint8_t Role = 2;      //FT / Relay(PktDensity<6&&rssi< x Dbm) (broadcast MAC and time every 5 min)  / Sensor/loud speaker/ Gateway(IOT manager) /Camera /Kids
-volatile uint8_t Mode = 2;      //0 Watch / 1 Dock /2  FT  /3  Forward /4  SOS
-volatile uint8_t WifiMode = 0;  //AP / STA
+volatile uint8_t Mode = 2;      //0 Watch / 1 Dock /2  FT  /3  Forward /4  SOS 
 volatile bool PhonePermit = false;
 extern volatile int timeZone = 8;  //timeZone offset UTC
 volatile uint8_t MissionGroup = 0;
@@ -116,7 +113,7 @@ volatile uint8_t LastMeetingB = 0;  // last meeting id for active
 
 
 uint8_t GreetingCode[OCT];
-bool SandboxFlag = true;
+bool RebootFT = true;
 
 
 uint8_t FavoriteList[6][OCT];
@@ -144,7 +141,7 @@ volatile uint16_t MeetingIndex = 0;
 
 //-----------------------------instance
 
-PktStruct WsQueue[KEY];  // ws_BIN received
+PktStruct WsQueue[HKEY];  // ws_BIN received
 PktStruct SndPkt[KEY];
 
 

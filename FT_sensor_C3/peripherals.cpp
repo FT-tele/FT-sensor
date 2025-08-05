@@ -248,7 +248,7 @@ void SensorTask(void *pvParameters) {
 
 
     vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1 second
-    switch (PeripheralsMode) {
+    switch (FTconfig.PeripheralsMode) {
       case 2:
         {
           if (digitalRead(IN_OR_OUT) == HIGH) {
@@ -275,10 +275,7 @@ void SensorTask(void *pvParameters) {
             sosType = 3;
             GPSjson["ST"] = "waterSensor";
             GPSjson["waterHeight"] = analogValue;
-          }
-          // Print the sensor value to the serial monitor
-
-          // Serial.printf("Analog value:%d \n", analogValue);
+          } 
         }
         break;
     }
@@ -301,11 +298,11 @@ void SensorTask(void *pvParameters) {
       WsQueue[0].pktLen = sosStr.length() + 1;
       sosStr.getBytes((unsigned char *)&WsQueue[0].payloadData[11], WsQueue[0].pktLen);
       WsQueue[0].pktLen = WsQueue[0].pktLen + 11;
-      memcpy(SndPkt[PeripheralsMode].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
-      SndPkt[PeripheralsMode].pktLen = WsQueue[0].pktLen;
+      memcpy(SndPkt[CodeRate].payloadData, WsQueue[0].payloadData, WsQueue[0].pktLen);
+      SndPkt[CodeRate].pktLen = WsQueue[0].pktLen;
       vTaskDelay(5000 / portTICK_PERIOD_MS);
       //for (int i = 0; i < SndPkt[takingHBR].pktLen; i++) Serial.printf("%d:%02X ", i, SndPkt[takingHBR].payloadData[i]);
-      xQueueSend(loraQueue, &PeripheralsMode, portMAX_DELAY);
+      xQueueSend(loraQueue, &CodeRate, portMAX_DELAY);
     }
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);

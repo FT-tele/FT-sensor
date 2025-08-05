@@ -61,7 +61,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(MENU_BTN), switchWifiMode, RISING);  // Swap to release
 
 
-  if (EnableGPS == 1) {
+  if (FTconfig.EnableGPS == 1) {
 
     xTaskCreatePinnedToCore(gpsTask, "gpsTask", 4096, NULL, 5, &gpsTaskHandle, CORE1);
     //vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -69,8 +69,8 @@ void setup() {
 
 
 
-  Serial.printf("  \n    Free heap: %d\n", esp_get_free_heap_size());
-  Serial.printf("\n Minimum WiFi.mode  free heap: %d\n", esp_get_minimum_free_heap_size());
+  Serial.printf("  \n    esp_get_free_heap_size: %d\n", esp_get_free_heap_size());
+  Serial.printf("\n   esp_get_minimum_free_heap_size: %d\n", esp_get_minimum_free_heap_size());
 
 
 
@@ -94,8 +94,7 @@ void setup() {
 
   loraInit();
 
-  GenerateKeyPairs(myPrivate, myPublic);
-  //Serial.println("GenerateKeyPairs  successfully.");
+  GenerateKeyPairs(myPrivate, myPublic); 
 
   esp_timer_create_args_t timer_args = {
     .callback = &onTimer,
@@ -104,7 +103,7 @@ void setup() {
     .name = "15min_timer"
   };
 
-  if (PeripheralsMode == 2) {
+  if (FTconfig.PeripheralsMode == 2) {
 
     //Serial.println(" ceate SensorTask");
     Wire.begin(SDA_PIN, SCK_PIN);
@@ -117,7 +116,7 @@ void setup() {
   }
 
 
-  if (PeripheralsMode == 3) {
+  if (FTconfig.PeripheralsMode == 3) {
 
     Wire.begin(SDA_PIN, SCK_PIN);
     Wire.setClock(400000);
@@ -131,7 +130,7 @@ void setup() {
   esp_timer_start_periodic(timer, 60000000);
   if (TurnOnWifi == 1) {
 
-    WiFi.mode(WIFI_AP);
+    wifiMode();
     xTaskCreatePinnedToCore(httpdTask, "httpdTask", 4096, NULL, 4, &httpdTaskHandle, CORE0);
 
     xTaskCreatePinnedToCore(sessionCipherTask, "sessionCipherTask", 8192, NULL, 9, &sessionCipherTaskHandle, CORE1);
@@ -143,7 +142,7 @@ void setup() {
 
 
 
-    if (PeripheralsMode == 1)  // 1 speaker;
+    if (FTconfig.PeripheralsMode == 1)  // 1 speaker;
     {
 
       initI2S();
@@ -178,14 +177,21 @@ void loop() {
   vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   if (taskReady && NeedReboot) {
-    if (FTconfig.Mode == !TurnOnWifi) {
-      FTconfig.Mode = TurnOnWifi;
-      saveConfig();
+    if (TurnOnWifi == false) {
+
+      FTconfig.Mode = 1;
+    } else {
+
+      FTconfig.Mode = 0;
+    }
+    if (saveConfig()) {
+
+      ESP.restart();
     }
     ESP.restart();
   }
 
-  if (PeripheralsMode == 1) {
+  if (FTconfig.PeripheralsMode == 1) {
     vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 

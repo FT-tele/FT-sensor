@@ -16,7 +16,7 @@ let TalkingGroup = -1;
 let TalkingName = "";
 let SessionGroup = 0;
 let MaxMsgBytes = 192;
-let MyName = "FT";
+let MyName = "";
 let WebpBlob;
 let zipBlob;
 let lastAlert = "";
@@ -930,15 +930,17 @@ function handleSettingsForm() {
     });
 */
 
-    const readOnlyMACKeys = ["MAC_0", "MAC_1", "MAC_2", "MAC_3", "MAC_4", "MAC_5" ];
+    const readOnlyMACKeys = ["MAC_0", "MAC_1", "MAC_2", "MAC_3", "MAC_4", "MAC_5"];
 
-    const NoneDisplay = ["T" ];
+    const NoneDisplay = ["T"];
     Object.keys(config).forEach(key => {
         // Create label element
         const label = document.createElement("label");
         label.textContent = `${key}: `;
 
+
         let input;
+        let readOnlyJSON;
 
         if (readOnlyMACKeys.includes(key)) {
             // Create read-only input for MAC addresses
@@ -987,11 +989,11 @@ function handleSettingsForm() {
             updatedConfig[input.id] = input.type === "checkbox" ? input.checked : input.value;
         });
         MyName = updatedConfig["MyName"];
+        //console.log("MyName now is" + MyName);
 
         if (confirm("if SavingConfig = 1 ,settings will be saved forever.WIFI related items need reboot?")) {
             ws.send(JSON.stringify(updatedConfig));
             showNotification(3000, "Settings saved!");
-            // MyName = ConfigList["MyName"];
         }
 
         // Hide the form after saving
@@ -1812,17 +1814,17 @@ document.getElementById("send-btn").addEventListener("click", function () {
                 break;
             case 64:
                 {
-                    //let speakerPrefix = MyName + ":";
-                    //let speakerPrefixArray = MsgTextEncoder.encode(speakerPrefix);
-                    // let msgArrayLen = speakerPrefixArray.length;
-                    // let sendMsgArray = new Uint8Array(3 + msgArrayLen + messageData.length);
-                    let sendMsgArray = new Uint8Array(3 + messageData.length);
+                    let speakerPrefix = MyName + ":";
+                    let speakerPrefixArray = MsgTextEncoder.encode(speakerPrefix);
+                    let msgArrayLen = speakerPrefixArray.length;
+                    //let sendMsgArray = new Uint8Array(3 + msgArrayLen + messageData.length);
+                    let sendMsgArray = new Uint8Array(3 + msgArrayLen + messageData.length);
                     sendMsgArray[0] = 64;
                     sendMsgArray[1] = TalkingUser;
                     sendMsgArray[2] = 2; // dataType
-                    sendMsgArray.set(messageData, 3);
-                    //sendMsgArray.set(speakerPrefixArray, 3);
-                    //sendMsgArray.set(messageData, 3 + msgArrayLen);
+
+                    sendMsgArray.set(speakerPrefixArray, 3);
+                    sendMsgArray.set(messageData, 3 + msgArrayLen);
                     ws.send(sendMsgArray);
                     storeMsg("Meeting", TalkingMsgId, 2, messageData, false)
                 }
@@ -1832,6 +1834,7 @@ document.getElementById("send-btn").addEventListener("click", function () {
                 {
                     if (TalkingUser > 0 || sosSend == true) {
                         if (messageData.length > 10) {
+                            //console.log("MyName in speech " + MyName);
                             let speakerPrefix = MyName + ":";
                             let speakerPrefixArray = MsgTextEncoder.encode(speakerPrefix);
                             let msgArrayLen = speakerPrefixArray.length;
@@ -2708,6 +2711,7 @@ window.onload = function () {
                 case 1:
                     {
                         Object.assign(ConfigList, rcvjsonData);
+                        MyName = rcvjsonData["MyName"];
 
                     }
                     break;
