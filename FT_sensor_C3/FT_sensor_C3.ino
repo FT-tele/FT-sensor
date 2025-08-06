@@ -94,7 +94,7 @@ void setup() {
 
   loraInit();
 
-  GenerateKeyPairs(myPrivate, myPublic); 
+  GenerateKeyPairs(myPrivate, myPublic);
 
   esp_timer_create_args_t timer_args = {
     .callback = &onTimer,
@@ -127,8 +127,8 @@ void setup() {
   }
 
   esp_timer_create(&timer_args, &timer);
-  esp_timer_start_periodic(timer, 60000000);
-  if (TurnOnWifi == 1) {
+  esp_timer_start_periodic(timer, 30000000);
+  if (TurnOnWifi) {
 
     wifiMode();
     xTaskCreatePinnedToCore(httpdTask, "httpdTask", 4096, NULL, 4, &httpdTaskHandle, CORE0);
@@ -177,17 +177,18 @@ void loop() {
   vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   if (taskReady && NeedReboot) {
-    if (TurnOnWifi == false) {
 
-      FTconfig.Mode = 1;
+    //Serial.printf("   \n FTconfig.Mode to %d ", FTconfig.Mode);
+    if (FTconfig.WifiMode == 0) {
+
+      FTconfig.WifiMode = 1;
     } else {
 
-      FTconfig.Mode = 0;
+      FTconfig.WifiMode = 0;
     }
-    if (saveConfig()) {
+    saveConfig();
 
-      ESP.restart();
-    }
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
     ESP.restart();
   }
 

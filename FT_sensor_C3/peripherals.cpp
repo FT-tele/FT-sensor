@@ -63,8 +63,7 @@ void onTimer(void *arg) {
 
 //-----------------------------button
 
-void IRAM_ATTR switchWifiMode() {
-  TurnOnWifi = !TurnOnWifi;
+void IRAM_ATTR switchWifiMode() { 
   Serial.printf("  reboot to %d ", TurnOnWifi);
   NeedReboot = true;
 }
@@ -171,6 +170,7 @@ void gpsTask(void *pvParameters) {
         GPSjson["Sp"] = Speed;
         GPSjson["Ry"] = RelayNum;
         GPSjson["St"] = Satellites;
+        GPSjson["Ds"] = TotalDistanceMeters;
       }
 
     } else {

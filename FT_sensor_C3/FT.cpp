@@ -671,8 +671,6 @@ bool initInfrast() {
       fsResult = true;
       //Serial.println("LittleFS formatted successfully.");
     } else {
-      //Serial.println("LittleFS formatting failed!");
-      fsResult = false;
       ESP.restart();
     };
   }
@@ -713,7 +711,11 @@ bool initInfrast() {
 
     } else {
 
-      TurnOnWifi = FTconfig.WifiMode;
+      //Serial.printf("   \n FTconfig.Mode to %d ", FTconfig.Mode);
+      if (FTconfig.WifiMode > 0)
+        TurnOnWifi = true;
+      else
+        TurnOnWifi = false;
 
       keyUpdate();
       //Serial.println(" loading SessionList .");
